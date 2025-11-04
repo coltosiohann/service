@@ -23,3 +23,15 @@ export async function getDefaultOrg() {
 
   return defaultOrg;
 }
+
+let cachedOrgId: string | null = null;
+
+export async function getDefaultOrgId() {
+  if (cachedOrgId) {
+    return cachedOrgId;
+  }
+
+  const org = await getDefaultOrg();
+  cachedOrgId = org.id;
+  return cachedOrgId;
+}

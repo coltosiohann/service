@@ -4,7 +4,7 @@ import { createVehicle } from '@/features/vehicles/service';
 import { vehicleQuerySchema } from '@/features/vehicles/validators';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
     const truckTonaj = url.searchParams.get('truck.tonajMare');
     const truckTahograf = url.searchParams.get('truck.tahograf');
 
+    const defaultOrgId = await getDefaultOrgId();
+
     const rawQuery = {
-      orgId: url.searchParams.get('orgId') ?? '',
+      orgId: url.searchParams.get('orgId') ?? defaultOrgId,
       type: url.searchParams.get('type') ?? undefined,
       status: url.searchParams.get('status') ?? undefined,
       insurance: url.searchParams.get('insurance') ?? undefined,
@@ -36,8 +38,6 @@ export async function GET(request: NextRequest) {
     };
 
     const query = vehicleQuerySchema.parse(rawQuery);
-
-    await requireOrgMembership(session.user.id, query.orgId);
 
     const vehicles = await listVehicles(query);
 
@@ -56,9 +56,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    await requireOrgRoleAtLeast(session.user.id, body.orgId, 'ADMIN');
-
-    const vehicle = await createVehicle(body);
+    const defaultOrgId = await getDefaultOrgId();
+    const vehicle = await createVehicle({
+      ...body,
+      orgId: body.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ vehicle }, { status: 201 });
   } catch (error) {

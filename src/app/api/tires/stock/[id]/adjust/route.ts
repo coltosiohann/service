@@ -2,7 +2,7 @@
 import { adjustTireStock } from '@/features/tires/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
@@ -19,12 +19,12 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     const body = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
     const payload = {
       ...body,
+      orgId: body.orgId ?? defaultOrgId,
       stockId: params.id,
     };
-
-    await requireOrgRoleAtLeast(session.user.id, payload.orgId, 'ADMIN');
 
     const stock = await adjustTireStock(payload);
 

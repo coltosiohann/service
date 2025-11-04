@@ -2,7 +2,7 @@
 import { listReminders, updateReminder } from '@/features/reminders/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
@@ -16,14 +16,13 @@ export async function GET(request: NextRequest) {
     }
 
     const url = new URL(request.url);
+    const defaultOrgId = await getDefaultOrgId();
     const query = {
-      orgId: url.searchParams.get('orgId') ?? '',
+      orgId: url.searchParams.get('orgId') ?? defaultOrgId,
       status: url.searchParams.get('status') || undefined,
       kind: url.searchParams.get('kind') || undefined,
       view: url.searchParams.get('view') || undefined,
     };
-
-    await requireOrgMembership(session.user.id, query.orgId);
 
     const reminders = await listReminders(query);
 
@@ -44,10 +43,12 @@ export async function PATCH(request: NextRequest) {
     enforceRateLimit(`reminders:${session.user.id}`, { windowMs: 60_000, max: 20 });
 
     const body = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
 
-    await requireOrgRoleAtLeast(session.user.id, body.orgId, 'ADMIN');
-
-    const reminder = await updateReminder(body.id, body);
+    const reminder = await updateReminder(body.id, {
+      ...body,
+      orgId: body.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ reminder });
   } catch (error) {

@@ -1,6 +1,4 @@
 import { AppShell } from '@/components/layout/app-shell';
-import { OrgProvider } from '@/components/providers/org-provider';
-import { getDefaultOrg } from '@/lib/default-org';
 
 import type { AppShellNavItem } from '@/components/layout/app-shell';
 
@@ -16,23 +14,7 @@ const NAV_ITEMS = [
 ] satisfies AppShellNavItem[];
 
 export default async function AppLayout({ children }: AppLayoutProps) {
-  // Authentication disabled - get or create default organization
-  const defaultOrg = await getDefaultOrg();
-
-  return (
-    <OrgProvider
-      initialOrgId={defaultOrg.id}
-      organizations={[
-        {
-          orgId: defaultOrg.id,
-          name: defaultOrg.name,
-          role: 'OWNER',
-        },
-      ]}
-    >
-      <AppShell nav={NAV_ITEMS}>{children}</AppShell>
-    </OrgProvider>
-  );
+  return <AppShell nav={NAV_ITEMS}>{children}</AppShell>;
 }
 
 

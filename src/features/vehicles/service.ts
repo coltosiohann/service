@@ -41,6 +41,23 @@ function toISODate(value: Date | string | null | undefined): string | null {
 
   return value;
 }
+
+function computeCopieConformaExpiry(
+  value: Date | string | null | undefined,
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const base = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(base.getTime())) {
+    return null;
+  }
+
+  const expiry = new Date(base);
+  expiry.setFullYear(expiry.getFullYear() + 1);
+  return expiry.toISOString().slice(0, 10);
+}
 type TireUsageItem = {
   stockId: string;
   quantity: number;
@@ -100,6 +117,13 @@ export async function createVehicle(payload: unknown) {
     });
 
   const record = await db.transaction(async (tx) => {
+    const copieConformaStart =
+      vehicle.type === 'TRUCK' ? toISODate(vehicle.copieConformaStartDate) : null;
+    const copieConformaExpiry =
+      vehicle.type === 'TRUCK'
+        ? computeCopieConformaExpiry(vehicle.copieConformaStartDate)
+        : null;
+
     const [created] = await tx
       .insert(vehicles)
       .values({
@@ -118,6 +142,8 @@ export async function createVehicle(payload: unknown) {
         insuranceProvider: vehicle.insuranceProvider,
         insurancePolicyNumber: vehicle.insurancePolicyNumber,
         insuranceEndDate: toISODate(vehicle.insuranceEndDate),
+        copieConformaStartDate: copieConformaStart,
+        copieConformaExpiryDate: copieConformaExpiry,
         hasHeavyTonnageAuthorization:
           vehicle.type === 'TRUCK' ? Boolean(vehicle.hasHeavyTonnageAuthorization) : null,
         tachographCheckDate: vehicle.type === 'TRUCK' ? toISODate(vehicle.tachographCheckDate) : null,

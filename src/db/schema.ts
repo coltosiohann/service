@@ -17,7 +17,7 @@ import {
 
 export const membershipRoleEnum = pgEnum('membership_role', ['OWNER', 'ADMIN', 'MECHANIC', 'VIEWER']);
 
-export const vehicleTypeEnum = pgEnum('vehicle_type', ['CAR', 'TRUCK']);
+export const vehicleTypeEnum = pgEnum('vehicle_type', ['CAR', 'TRUCK', 'EQUIPMENT']);
 export const vehicleStatusEnum = pgEnum('vehicle_status', ['OK', 'DUE_SOON', 'OVERDUE']);
 
 export const serviceEventTypeEnum = pgEnum('service_event_type', [
@@ -100,10 +100,12 @@ export const vehicles = pgTable(
     lastRevisionDate: date('last_revision_date'),
     nextRevisionAtKm: numeric('next_revision_at_km', { precision: 12, scale: 2 }),
     nextRevisionDate: date('next_revision_date'),
-    insuranceProvider: text('insurance_provider'),
-    insurancePolicyNumber: text('insurance_policy_number'),
-    insuranceEndDate: date('insurance_end_date'),
-    hasHeavyTonnageAuthorization: boolean('has_heavy_tonnage_authorization'),
+      insuranceProvider: text('insurance_provider'),
+      insurancePolicyNumber: text('insurance_policy_number'),
+      insuranceEndDate: date('insurance_end_date'),
+      copieConformaStartDate: date('copie_conforma_start_date'),
+      copieConformaExpiryDate: date('copie_conforma_expiry_date'),
+      hasHeavyTonnageAuthorization: boolean('has_heavy_tonnage_authorization'),
     tachographCheckDate: date('tachograph_check_date'),
     status: vehicleStatusEnum('status').notNull().default('OK'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

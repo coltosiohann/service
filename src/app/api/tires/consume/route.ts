@@ -2,7 +2,7 @@
 import { consumeTires } from '@/features/tires/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
@@ -15,10 +15,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
 
-    await requireOrgRoleAtLeast(session.user.id, body.orgId, 'MECHANIC');
-
-    await consumeTires(body);
+    await consumeTires({
+      ...body,
+      orgId: body.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ success: true });
   } catch (error) {

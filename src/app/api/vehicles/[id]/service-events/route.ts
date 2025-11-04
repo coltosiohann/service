@@ -5,7 +5,7 @@ import {
 } from '@/features/service-events/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
@@ -23,9 +23,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgMembership(session.user.id, orgId);
+    const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
 
     const events = await listServiceEvents(params.id, orgId);
 
@@ -46,11 +44,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     enforceRateLimit(`service-event:${session.user.id}`, { windowMs: 60_000, max: 10 });
 
     const payload = await request.json();
-
-    await requireOrgRoleAtLeast(session.user.id, payload.orgId, 'MECHANIC');
+    const defaultOrgId = await getDefaultOrgId();
 
     const event = await createServiceEvent(
-      { ...payload, vehicleId: params.id },
+      { ...payload, orgId: payload.orgId ?? defaultOrgId, vehicleId: params.id },
       session.user.id,
     );
 

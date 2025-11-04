@@ -8,7 +8,6 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useOrg } from '@/components/providers/org-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useApiMutation, useApiQuery } from '@/hooks/use-api';
 
 const vehicleSchema = z.object({
-  type: z.enum(['CAR', 'TRUCK']),
+  type: z.enum(['CAR', 'TRUCK', 'EQUIPMENT']),
   make: z.string().min(1, 'Marca este obligatorie.'),
   model: z.string().min(1, 'Modelul este obligatoriu.'),
   year: z.coerce.number().int().min(1980, 'An invalid.').max(new Date().getFullYear() + 1),
@@ -36,6 +35,7 @@ const vehicleSchema = z.object({
   insuranceEndDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
   tachographCheckDate: z.string().optional(),
+  copieConformaStartDate: z.string().optional(),
   tireUsageReason: z
     .string()
     .max(200, 'Motivul poate avea cel mult 200 de caractere.')
@@ -58,8 +58,7 @@ type VehicleFormValues = z.infer<typeof vehicleSchema>;
 type VehicleFormInput = z.input<typeof vehicleSchema>;
 
 type VehicleUpdatePayload = {
-  orgId: string;
-  type: 'CAR' | 'TRUCK';
+  type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
   make: string;
   model: string;
   year: number;
@@ -73,6 +72,8 @@ type VehicleUpdatePayload = {
   insuranceEndDate: Date | null;
   hasHeavyTonnageAuthorization?: boolean;
   tachographCheckDate: Date | null;
+  copieConformaStartDate: Date | null;
+  copieConformaExpiryDate: Date | null;
   tiresUsage?: Array<{ stockId: string; quantity: number; reason?: string }>;
   tireUsageReason?: string;
 };
@@ -80,7 +81,7 @@ type VehicleUpdatePayload = {
 type VehicleEditFormProps = {
   vehicle: {
     id: string;
-    type: 'CAR' | 'TRUCK';
+    type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
     make: string;
     model: string;
     year: number;
@@ -94,12 +95,13 @@ type VehicleEditFormProps = {
     insuranceEndDate: Date | null;
     hasHeavyTonnageAuthorization: boolean | null;
     tachographCheckDate: Date | null;
+    copieConformaStartDate: Date | null;
+    copieConformaExpiryDate: Date | null;
   };
 };
 
 export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   const router = useRouter();
-  const { orgId } = useOrg();
 
   const form = useForm<VehicleFormInput, unknown, VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -126,6 +128,9 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       tachographCheckDate: vehicle.tachographCheckDate
         ? new Date(vehicle.tachographCheckDate).toISOString().split('T')[0]
         : '',
+      copieConformaStartDate: vehicle.copieConformaStartDate
+        ? new Date(vehicle.copieConformaStartDate).toISOString().split('T')[0]
+        : '',
       tireUsageReason: '',
       tiresUsage: [],
     },
@@ -146,7 +151,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   const { data: stockData } = useApiQuery<{ stock: { id: string; size: string; brand: string | null; quantity: number }[] }>(
     '/api/tires/stock',
     {},
-    { enabled: Boolean(orgId && typeValue === 'TRUCK'), key: ['tire-stock', orgId] },
+    { enabled: typeValue === 'TRUCK', key: ['tire-stock', typeValue] },
   );
 
   useEffect(() => {
@@ -160,13 +165,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   const stockOptions = stockData?.stock ?? [];
 
   const onSubmit = async (values: VehicleFormValues) => {
-    if (!orgId) {
-      toast.error('Selectati o organizatie activa.');
-      return;
-    }
-
     const payload: VehicleUpdatePayload = {
-      orgId,
       type: values.type,
       make: values.make,
       model: values.model,
@@ -186,6 +185,14 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       tachographCheckDate:
         values.type === 'TRUCK' && values.tachographCheckDate
           ? new Date(values.tachographCheckDate)
+          : null,
+      copieConformaStartDate:
+        values.type === 'TRUCK' && values.copieConformaStartDate
+          ? new Date(values.copieConformaStartDate)
+          : null,
+      copieConformaExpiryDate:
+        values.type === 'TRUCK' && values.copieConformaStartDate
+          ? new Date(new Date(values.copieConformaStartDate).getFullYear() + 1, new Date(values.copieConformaStartDate).getMonth(), new Date(values.copieConformaStartDate).getDate())
           : null,
     };
 
@@ -233,6 +240,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
               >
                 <option value="CAR">Masina</option>
                 <option value="TRUCK">Camion</option>
+                <option value="EQUIPMENT">Utilaje</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -321,6 +329,11 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
                   <Label htmlFor="tachographCheckDate">Data verificare tahograf</Label>
                   <Input id="tachographCheckDate" type="date" {...form.register('tachographCheckDate')} />
                   <FieldError message={form.formState.errors.tachographCheckDate?.message} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copieConformaStartDate">Copie Conforma - Data start</Label>
+                  <Input id="copieConformaStartDate" type="date" {...form.register('copieConformaStartDate')} />
+                  <FieldError message={form.formState.errors.copieConformaStartDate?.message} />
                 </div>
               </section>
 

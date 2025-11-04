@@ -2,8 +2,6 @@
 
 import { useMutation, useQuery, type QueryKey, type UseMutationOptions } from '@tanstack/react-query';
 
-import { useOrg } from '@/components/providers/org-provider';
-
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -41,19 +39,12 @@ function buildUrl(path: string, params: QueryParams) {
 }
 
 export function useApiQuery<T>(path: string, params: QueryParams = {}, options?: { enabled?: boolean; key?: QueryKey }) {
-  const { orgId } = useOrg();
   const enabled = options?.enabled ?? true;
 
   return useQuery<T>({
-    queryKey: options?.key ?? [path, orgId, params],
-    enabled: enabled && Boolean(orgId),
-    queryFn: () => {
-      if (!orgId) {
-        throw new Error('Organizație lipsă.');
-      }
-      const url = buildUrl(path, { ...params, orgId });
-      return request<T>(url);
-    },
+    queryKey: options?.key ?? [path, params],
+    enabled,
+    queryFn: () => request<T>(buildUrl(path, params)),
   });
 }
 
@@ -63,16 +54,8 @@ export function useApiMutation<TResponse, TBody = unknown>(
   params: QueryParams = {},
   options?: UseMutationOptions<TResponse, Error, TBody>,
 ) {
-  const { orgId } = useOrg();
-
   return useMutation<TResponse, Error, TBody>({
     ...options,
-    mutationFn: async (variables: TBody) => {
-      if (!orgId) {
-        throw new Error('Organizație lipsă.');
-      }
-      const url = buildUrl(path, { ...params, orgId });
-      return request<TResponse>(url, { method, body: variables });
-    },
+    mutationFn: async (variables: TBody) => request<TResponse>(buildUrl(path, params), { method, body: variables }),
   });
 }

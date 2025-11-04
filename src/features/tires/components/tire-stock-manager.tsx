@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useOrg } from '@/components/providers/org-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,7 +42,6 @@ type AdjustmentState = {
 };
 
 export function TireStockManager() {
-  const { orgId } = useOrg();
   const [adjustments, setAdjustments] = useState<Record<string, AdjustmentState>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -68,10 +66,6 @@ export function TireStockManager() {
   });
 
   const handleCreate = form.handleSubmit(async (values) => {
-    if (!orgId) {
-      toast.error('Selectați o organizație activă înainte de a adăuga stoc.');
-      return;
-    }
 
     try {
       const response = await fetch('/api/tires/stock', {
@@ -79,10 +73,7 @@ export function TireStockManager() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...values,
-          orgId,
-        }),
+        body: JSON.stringify(values),
       });
 
       if (!response.ok) {
@@ -105,10 +96,6 @@ export function TireStockManager() {
   });
 
   const handleAdjustment = async (stockId: string, direction: 'add' | 'remove') => {
-    if (!orgId) {
-      toast.error('Selectați o organizație activă.');
-      return;
-    }
 
     const current = adjustments[stockId] ?? { quantity: 0, reason: '' };
     const amount = Number(current.quantity ?? 0);
@@ -127,7 +114,6 @@ export function TireStockManager() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orgId,
           change,
           reason: current.reason,
         }),
@@ -150,10 +136,6 @@ export function TireStockManager() {
   };
 
   const handleDelete = async (stockId: string, label: string) => {
-    if (!orgId) {
-      toast.error('Selectati o organizatie activa.');
-      return;
-    }
 
     const confirmed = window.confirm(`Stergeti anvelopa ${label}?`);
     if (!confirmed) {
@@ -163,7 +145,7 @@ export function TireStockManager() {
     setDeletingId(stockId);
 
     try {
-      const response = await fetch(`/api/tires/stock/${stockId}?orgId=${orgId}`, {
+      const response = await fetch(`/api/tires/stock/${stockId}`, {
         method: 'DELETE',
       });
 

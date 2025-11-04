@@ -3,7 +3,7 @@ import { listOdometerLogs } from '@/features/odometer/service';
 import { listReminders } from '@/features/reminders/service';
 import { listServiceEvents } from '@/features/service-events/service';
 import { ensureVehicleAccess, toNumber } from '@/features/vehicles/service';
-import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
+import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
 
 export async function getVehicleDetail(orgId: string, vehicleId: string) {
   const vehicle = await ensureVehicleAccess(orgId, vehicleId);
@@ -18,6 +18,8 @@ export async function getVehicleDetail(orgId: string, vehicleId: string) {
   const insuranceStatus = computeInsuranceStatus(vehicle.insuranceEndDate ?? null);
   const tachographStatus =
     vehicle.type === 'TRUCK' ? computeTachographStatus(vehicle.tachographCheckDate ?? null) : null;
+  const copieConformaStatus =
+    vehicle.type === 'TRUCK' ? computeCopieConformaStatus(vehicle.copieConformaExpiryDate ?? null) : null;
 
   return {
     vehicle: {
@@ -27,6 +29,7 @@ export async function getVehicleDetail(orgId: string, vehicleId: string) {
         vehicle.nextRevisionAtKm != null ? toNumber(vehicle.nextRevisionAtKm) : null,
       insuranceStatus,
       tachographStatus,
+      copieConformaStatus,
     },
     serviceEvents: events,
     odometerLogs: logs,

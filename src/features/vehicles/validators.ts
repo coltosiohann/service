@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const vehicleTypeEnum = z.enum(['CAR', 'TRUCK']);
+const vehicleTypeEnum = z.enum(['CAR', 'TRUCK', 'EQUIPMENT']);
 const vehicleStatusEnum = z.enum(['OK', 'DUE_SOON', 'OVERDUE']);
 
 const tireUsageEntrySchema = z.object({
@@ -47,18 +47,18 @@ export const vehiclePayloadSchema = z
     tiresUsage: z.array(tireUsageEntrySchema).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.type === 'CAR') {
+    if (data.type === 'CAR' || data.type === 'EQUIPMENT') {
       if (data.hasHeavyTonnageAuthorization != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'AutorizaE>ia de tonaj este permis?? doar pentru camioane.',
+          message: 'Autorizația de tonaj este permisă doar pentru camioane.',
           path: ['hasHeavyTonnageAuthorization'],
         });
       }
       if (data.tachographCheckDate != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Data tahograf este disponibil?? doar pentru camioane.',
+          message: 'Data tahograf este disponibilă doar pentru camioane.',
           path: ['tachographCheckDate'],
         });
       }
@@ -67,6 +67,13 @@ export const vehiclePayloadSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Consum anvelope disponibil doar pentru camioane.',
           path: ['tiresUsage'],
+        });
+      }
+      if (data.copieConformaStartDate != null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Copie conformă este disponibilă doar pentru camioane.',
+          path: ['copieConformaStartDate'],
         });
       }
     }

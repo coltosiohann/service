@@ -2,7 +2,7 @@
 import { deleteTireStock } from '@/features/tires/service';
 import { errorResponse, successMessage } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
@@ -19,9 +19,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgRoleAtLeast(session.user.id, orgId, 'ADMIN');
+    const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
 
     await deleteTireStock(params.id, orgId);
 

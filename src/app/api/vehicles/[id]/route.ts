@@ -3,7 +3,7 @@ import { getVehicleDetail } from '@/features/vehicles/detail';
 import { softDeleteVehicle, updateVehicle } from '@/features/vehicles/service';
 import { errorResponse, jsonResponse, successMessage } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
@@ -21,9 +21,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgMembership(session.user.id, orgId);
+    const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
 
     const detail = await getVehicleDetail(orgId, params.id);
 
@@ -44,10 +42,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     enforceRateLimit(`vehicle-update:${session.user.id}`, { windowMs: 60_000, max: 10 });
 
     const body = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
 
-    await requireOrgRoleAtLeast(session.user.id, body.orgId, 'MECHANIC');
-
-    const vehicle = await updateVehicle(params.id, body);
+    const vehicle = await updateVehicle(params.id, {
+      ...body,
+      orgId: body.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ vehicle });
   } catch (error) {
@@ -62,11 +62,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (!session?.user?.id) {
       return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
     }
-
-    const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgRoleAtLeast(session.user.id, orgId, 'ADMIN');
 
     await softDeleteVehicle(params.id);
 

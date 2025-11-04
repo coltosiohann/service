@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CopieConformaBadge } from '@/features/vehicles/components/copie-conforma-badge';
 import { InsuranceBadge } from '@/features/vehicles/components/insurance-badge';
 import { StatusPill } from '@/features/vehicles/components/status-pill';
 import { TachographBadge } from '@/features/vehicles/components/tachograph-badge';
@@ -55,7 +56,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {vehicle.make} {vehicle.model} - {vehicle.year}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {vehicle.type === 'TRUCK' ? 'Camion' : 'Masina'}
+            {vehicle.type === 'TRUCK' ? 'Camion' : vehicle.type === 'EQUIPMENT' ? 'Utilaje' : 'Masina'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -118,7 +119,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Conformitate camion</CardTitle>
-              <CardDescription>Status tahograf si tonaj.</CardDescription>
+              <CardDescription>Status tahograf, copie conforma si tonaj.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between text-sm">
@@ -132,6 +133,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 <span className="font-medium">{formatDate(vehicle.tachographCheckDate)}</span>
               </div>
               <TachographBadge state={vehicle.tachographStatus} />
+              <div className="flex items-center justify-between text-sm">
+                <span>Copie Conforma - Expira la</span>
+                <span className="font-medium">{formatDate(vehicle.copieConformaExpiryDate)}</span>
+              </div>
+              <CopieConformaBadge state={vehicle.copieConformaStatus} />
             </CardContent>
           </Card>
         )}

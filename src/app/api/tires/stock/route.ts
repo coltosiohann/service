@@ -2,7 +2,7 @@
 import { createTireStock, listTireStock } from '@/features/tires/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgMembership(session.user.id, orgId);
+    const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
 
     const stock = await listTireStock(orgId);
 
@@ -36,10 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
 
-    await requireOrgRoleAtLeast(session.user.id, body.orgId, 'ADMIN');
-
-    const stock = await createTireStock(body);
+    const stock = await createTireStock({
+      ...body,
+      orgId: body.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ stock }, { status: 201 });
   } catch (error) {

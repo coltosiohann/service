@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useOrg } from '@/components/providers/org-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useApiMutation } from '@/hooks/use-api';
 
 const vehicleSchema = z.object({
-  type: z.enum(['CAR', 'TRUCK']),
+  type: z.enum(['CAR', 'TRUCK', 'EQUIPMENT']),
   make: z.string().min(1, 'Marca este obligatorie.'),
   model: z.string().min(1, 'Modelul este obligatoriu.'),
   year: z.coerce.number().int().min(1980, 'An invalid.').max(new Date().getFullYear() + 1),
@@ -33,6 +32,7 @@ const vehicleSchema = z.object({
   insuranceEndDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
   tachographCheckDate: z.string().optional(),
+  copieConformaStartDate: z.string().optional(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -40,7 +40,6 @@ type VehicleFormInput = z.input<typeof vehicleSchema>;
 
 export function VehicleForm() {
   const router = useRouter();
-  const { orgId } = useOrg();
 
   const form = useForm<VehicleFormInput, unknown, VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -60,16 +59,9 @@ export function VehicleForm() {
   const mutation = useApiMutation<{ vehicle: { id: string } }, Record<string, unknown>>('/api/vehicles', 'POST');
 
   const onSubmit = async (values: VehicleFormValues) => {
-    console.log('Form submitted!', { values, orgId });
-
-    if (!orgId) {
-      console.error('No orgId available!');
-      toast.error('Selectati o organizatie activa.');
-      return;
-    }
+    console.log('Form submitted!', { values });
 
     const payload = {
-      orgId,
       type: values.type,
       make: values.make,
       model: values.model,
@@ -89,6 +81,14 @@ export function VehicleForm() {
       tachographCheckDate:
         values.type === 'TRUCK' && values.tachographCheckDate
           ? new Date(values.tachographCheckDate)
+          : null,
+      copieConformaStartDate:
+        values.type === 'TRUCK' && values.copieConformaStartDate
+          ? new Date(values.copieConformaStartDate)
+          : null,
+      copieConformaExpiryDate:
+        values.type === 'TRUCK' && values.copieConformaStartDate
+          ? new Date(new Date(values.copieConformaStartDate).getFullYear() + 1, new Date(values.copieConformaStartDate).getMonth(), new Date(values.copieConformaStartDate).getDate())
           : null,
     };
 
@@ -124,6 +124,7 @@ export function VehicleForm() {
               >
                 <option value="CAR">Masina</option>
                 <option value="TRUCK">Camion</option>
+                <option value="EQUIPMENT">Utilaje</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -211,6 +212,11 @@ export function VehicleForm() {
                 <Label htmlFor="tachographCheckDate">Data verificare tahograf</Label>
                 <Input id="tachographCheckDate" type="date" {...form.register('tachographCheckDate')} />
                 <FieldError message={form.formState.errors.tachographCheckDate?.message} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="copieConformaStartDate">Copie Conforma - Data start</Label>
+                <Input id="copieConformaStartDate" type="date" {...form.register('copieConformaStartDate')} />
+                <FieldError message={form.formState.errors.copieConformaStartDate?.message} />
               </div>
             </section>
           )}

@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useOrg } from '@/components/providers/org-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +72,6 @@ const tachographFilters = [
 
 export function VehiclesTable() {
   const router = useRouter();
-  const { orgId } = useOrg();
   const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK'>('ALL');
   const [status, setStatus] = useState<'ALL' | 'OK' | 'DUE_SOON' | 'OVERDUE'>('ALL');
   const [insurance, setInsurance] = useState<'ALL' | 'active' | 'expiring' | 'expired'>('ALL');
@@ -117,7 +115,7 @@ export function VehiclesTable() {
     setDeletingId(vehicleId);
 
     try {
-      await fetch(`/api/vehicles/${vehicleId}?orgId=${orgId}`, {
+      await fetch(`/api/vehicles/${vehicleId}`, {
         method: 'DELETE',
       });
 

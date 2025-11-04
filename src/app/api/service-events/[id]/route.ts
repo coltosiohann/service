@@ -2,7 +2,7 @@
 import { deleteServiceEvent, updateServiceEvent } from '@/features/service-events/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+import { getDefaultOrgId } from '@/lib/default-org';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
@@ -22,10 +22,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     enforceRateLimit(`service-event-edit:${session.user.id}`, { windowMs: 60_000, max: 15 });
 
     const payload = await request.json();
+    const defaultOrgId = await getDefaultOrgId();
 
-    await requireOrgRoleAtLeast(session.user.id, payload.orgId, 'MECHANIC');
-
-    const event = await updateServiceEvent(params.id, payload);
+    const event = await updateServiceEvent(params.id, {
+      ...payload,
+      orgId: payload.orgId ?? defaultOrgId,
+    });
 
     return jsonResponse({ event });
   } catch (error) {
@@ -40,11 +42,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (!session?.user?.id) {
       return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
     }
-
-    const url = new URL(request.url);
-    const orgId = url.searchParams.get('orgId') ?? '';
-
-    await requireOrgRoleAtLeast(session.user.id, orgId, 'ADMIN');
 
     const event = await deleteServiceEvent(params.id);
 

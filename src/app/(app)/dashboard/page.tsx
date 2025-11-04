@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db, reminders, serviceEvents, vehicles } from '@/db';
 import { toNumber } from '@/features/vehicles/service';
-import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
-import { getDefaultOrg } from '@/lib/default-org';
+import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
+import { getDefaultOrgId } from '@/lib/default-org';
 import { cn, formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +45,19 @@ async function getDashboardData(orgId: string) {
         isNotNull(vehicles.insuranceEndDate),
         lte(vehicles.insuranceEndDate, inThirtyDaysString),
         gt(vehicles.insuranceEndDate, todayString),
+      ),
+    );
+
+  const [copieConformaExpiring] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(
+      and(
+        orgActiveCondition,
+        eq(vehicles.type, 'TRUCK'),
+        isNotNull(vehicles.copieConformaExpiryDate),
+        lte(vehicles.copieConformaExpiryDate, inThirtyDaysString),
+        gt(vehicles.copieConformaExpiryDate, todayString),
       ),
     );
 
@@ -105,6 +118,7 @@ async function getDashboardData(orgId: string) {
       nextRevisionAtKm: vehicles.nextRevisionAtKm,
       insuranceEndDate: vehicles.insuranceEndDate,
       tachographCheckDate: vehicles.tachographCheckDate,
+      copieConformaExpiryDate: vehicles.copieConformaExpiryDate,
       hasHeavyTonnageAuthorization: vehicles.hasHeavyTonnageAuthorization,
       status: vehicles.status,
     })
@@ -118,6 +132,7 @@ async function getDashboardData(orgId: string) {
     overdueVehicles: Number(overdueVehicles?.count ?? 0),
     dueSoonVehicles: Number(dueSoonVehicles?.count ?? 0),
     insuranceExpiring: Number(insuranceExpiring?.count ?? 0),
+    copieConformaExpiring: Number(copieConformaExpiring?.count ?? 0),
     upcomingReminders,
     recentEvents,
     vehiclesList,
@@ -126,17 +141,18 @@ async function getDashboardData(orgId: string) {
 
 export default async function DashboardPage() {
   // Authentication disabled - get default organization
-  const defaultOrg = await getDefaultOrg();
+  const defaultOrgId = await getDefaultOrgId();
 
-  const data = await getDashboardData(defaultOrg.id);
+  const data = await getDashboardData(defaultOrgId);
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard title="Total vehicule" value={data.totalVehicles} trend="Panorama completa a flotei" />
         <KpiCard title="Revizii intarziate" value={data.overdueVehicles} tone="danger" trend="Actiuni urgente" />
         <KpiCard title="In curand" value={data.dueSoonVehicles} tone="warning" trend="Planificati interventiile" />
         <KpiCard title="Asigurari care expira" value={data.insuranceExpiring} tone="warning" trend="Verificati documentele" />
+        <KpiCard title="Copie Conforma expira" value={data.copieConformaExpiring} tone="warning" trend="Camioane cu documente" />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
@@ -222,6 +238,10 @@ export default async function DashboardPage() {
                   vehicle.type === 'TRUCK'
                     ? computeTachographStatus(vehicle.tachographCheckDate ?? null)
                     : null;
+                const copieConforma =
+                  vehicle.type === 'TRUCK'
+                    ? computeCopieConformaStatus(vehicle.copieConformaExpiryDate ?? null)
+                    : null;
 
                 return (
                   <div key={vehicle.id} className="rounded-3xl border border-border bg-white p-4 shadow-sm">
@@ -262,18 +282,32 @@ export default async function DashboardPage() {
                         </dd>
                       </div>
                       {vehicle.type === 'TRUCK' && (
-                        <div className="flex justify-between">
-                          <dt className="text-muted-foreground">Tahograf</dt>
-                          <dd>
-                            {tachograph === 'overdue'
-                              ? 'Depasit'
-                              : tachograph === 'soon'
-                                ? 'In curand'
-                                : tachograph === 'missing'
-                                  ? 'Nespecificat'
-                                  : 'OK'}
-                          </dd>
-                        </div>
+                        <>
+                          <div className="flex justify-between">
+                            <dt className="text-muted-foreground">Tahograf</dt>
+                            <dd>
+                              {tachograph === 'overdue'
+                                ? 'Depasit'
+                                : tachograph === 'soon'
+                                  ? 'In curand'
+                                  : tachograph === 'missing'
+                                    ? 'Nespecificat'
+                                    : 'OK'}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-muted-foreground">Copie Conforma</dt>
+                            <dd>
+                              {copieConforma === 'overdue'
+                                ? 'Depasit'
+                                : copieConforma === 'soon'
+                                  ? 'In curand'
+                                  : copieConforma === 'missing'
+                                    ? 'Nespecificat'
+                                    : 'OK'}
+                            </dd>
+                          </div>
+                        </>
                       )}
                     </dl>
                   </div>

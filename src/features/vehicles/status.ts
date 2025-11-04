@@ -4,6 +4,7 @@ import type { VehicleStatus } from '@/db/schema';
 
 export type InsuranceStatus = 'active' | 'expiring' | 'expired';
 export type TachographStatus = 'ok' | 'soon' | 'overdue' | 'missing';
+export type CopieConformaStatus = 'ok' | 'soon' | 'overdue' | 'missing';
 
 export function computeVehicleStatus(params: {
   nextRevisionDate: Date | string | null;
@@ -93,6 +94,35 @@ export function computeTachographStatus(date: Date | string | null): TachographS
   }
 
   const days = differenceInCalendarDays(checkDateStart, todayStart);
+
+  if (days <= 30) {
+    return 'soon';
+  }
+
+  return 'ok';
+}
+
+export function computeCopieConformaStatus(expiryDate: Date | string | null): CopieConformaStatus {
+  if (!expiryDate) {
+    return 'missing';
+  }
+
+  // Convert string to Date object if needed
+  const dateObj = typeof expiryDate === 'string' ? new Date(expiryDate) : expiryDate;
+
+  if (!isValid(dateObj)) {
+    return 'missing';
+  }
+
+  // Compare only dates, not times
+  const expiryDateStart = startOfDay(dateObj);
+  const todayStart = startOfDay(new Date());
+
+  if (isBefore(expiryDateStart, todayStart)) {
+    return 'overdue';
+  }
+
+  const days = differenceInCalendarDays(expiryDateStart, todayStart);
 
   if (days <= 30) {
     return 'soon';
