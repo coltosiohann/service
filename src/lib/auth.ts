@@ -8,9 +8,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/autentificare',
   },
   callbacks: {
-    async session() {
-      // Return null session since auth is disabled
-      return null as any;
+    async session({ session }) {
+      // Return empty session since auth is disabled
+      return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET || 'development-secret-key',

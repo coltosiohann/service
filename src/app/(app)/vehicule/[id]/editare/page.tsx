@@ -28,6 +28,8 @@ export default async function EditVehiclePage({ params }: PageProps) {
     nextRevisionDate: parseDate(detail.vehicle.nextRevisionDate),
     insuranceEndDate: parseDate(detail.vehicle.insuranceEndDate),
     tachographCheckDate: parseDate(detail.vehicle.tachographCheckDate),
+    copieConformaStartDate: parseDate(detail.vehicle.copieConformaStartDate),
+    copieConformaExpiryDate: parseDate(detail.vehicle.copieConformaExpiryDate),
   };
 
   return (

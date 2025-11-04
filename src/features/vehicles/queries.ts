@@ -18,7 +18,7 @@ function toNumber(value: string | number | null | undefined): number | null {
 
 export type VehicleListFilters = {
   orgId: string;
-  type?: 'CAR' | 'TRUCK';
+  type?: 'CAR' | 'TRUCK' | 'EQUIPMENT';
   status?: 'OK' | 'DUE_SOON' | 'OVERDUE';
   insurance?: InsuranceStatus;
   search?: string;

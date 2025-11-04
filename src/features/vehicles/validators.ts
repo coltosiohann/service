@@ -38,6 +38,8 @@ export const vehiclePayloadSchema = z
     insuranceEndDate: z.coerce.date().optional().nullable(),
     hasHeavyTonnageAuthorization: z.coerce.boolean().optional().nullable(),
     tachographCheckDate: z.coerce.date().optional().nullable(),
+    copieConformaStartDate: z.coerce.date().optional().nullable(),
+    copieConformaExpiryDate: z.coerce.date().optional().nullable(),
     status: vehicleStatusEnum.optional(),
     tireUsageReason: z
       .string()
@@ -74,6 +76,13 @@ export const vehiclePayloadSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Copie conformă este disponibilă doar pentru camioane.',
           path: ['copieConformaStartDate'],
+        });
+      }
+      if (data.copieConformaExpiryDate != null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Copie conformă este disponibilă doar pentru camioane.',
+          path: ['copieConformaExpiryDate'],
         });
       }
     }
