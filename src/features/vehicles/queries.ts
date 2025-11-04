@@ -2,7 +2,9 @@ import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 
 import { db } from '@/db';
 import { documents, vehicles } from '@/db/schema';
+
 import { computeInsuranceStatus, computeTachographStatus } from './status';
+
 import type { InsuranceStatus, TachographStatus } from './status';
 
 function toNumber(value: string | number | null | undefined): number | null {
@@ -40,7 +42,13 @@ export async function listVehicles(filters: VehicleListFilters) {
 
   if (search) {
     const pattern = `%${search.trim()}%`;
-    conditions.push(or(ilike(vehicles.licensePlate, pattern), ilike(vehicles.vin, pattern)));
+    const searchCondition = or(
+      ilike(vehicles.licensePlate, pattern),
+      ilike(vehicles.vin, pattern),
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
   }
 
   const rows = await db

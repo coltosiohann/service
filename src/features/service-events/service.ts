@@ -1,37 +1,51 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { db, serviceEvents, vehicles } from '@/db';
-import { NotFoundError, ValidationError } from '@/lib/errors';
 import {
   ensureVehicleAccess,
   recalculateVehicleStatus,
   toNumber,
 } from '@/features/vehicles/service';
+import { NotFoundError, ValidationError } from '@/lib/errors';
+
 import { serviceEventPayloadSchema, serviceEventUpdateSchema } from './validators';
+
+function toISODateString(value: Date | string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return value;
+}
 
 function buildVehicleUpdates(params: {
   vehicle: typeof vehicles.$inferSelect;
   payload: {
     type: 'OIL_CHANGE' | 'REVISION' | 'REPAIR' | 'INSPECTION' | 'OTHER';
-    date: Date;
+    date: Date | string;
     odometerKm?: number | null;
     nextDueKm?: number | null;
-    nextDueDate?: Date | null;
+    nextDueDate?: Date | string | null;
   };
 }) {
   const { vehicle, payload } = params;
   const updates: Record<string, unknown> = {};
+  const eventDate = toISODateString(payload.date);
 
-  if (payload.type === 'REVISION') {
-    updates.lastRevisionDate = payload.date;
+  if (payload.type === 'REVISION' && eventDate) {
+    updates.lastRevisionDate = eventDate;
   }
 
-  if (payload.type === 'OIL_CHANGE') {
-    updates.lastOilChangeDate = payload.date;
+  if (payload.type === 'OIL_CHANGE' && eventDate) {
+    updates.lastOilChangeDate = eventDate;
   }
 
   if (payload.nextDueDate) {
-    updates.nextRevisionDate = payload.nextDueDate;
+    updates.nextRevisionDate = toISODateString(payload.nextDueDate);
   }
 
   if (payload.nextDueKm != null) {
@@ -57,16 +71,23 @@ export async function createServiceEvent(payload: unknown, userId: string) {
 
   const data = parsed.data;
   const vehicle = await ensureVehicleAccess(data.orgId, data.vehicleId);
+  const eventDate = toISODateString(data.date);
+
+  if (!eventDate) {
+    throw new ValidationError('Data eveniment lipseste.');
+  }
+
+  const nextDueDate = toISODateString(data.nextDueDate ?? null);
 
   const [event] = await db
     .insert(serviceEvents)
     .values({
       vehicleId: data.vehicleId,
       type: data.type,
-      date: data.date,
+      date: eventDate,
       odometerKm: data.odometerKm != null ? data.odometerKm.toString() : null,
       nextDueKm: data.nextDueKm != null ? data.nextDueKm.toString() : null,
-      nextDueDate: data.nextDueDate ?? null,
+      nextDueDate,
       notes: data.notes ?? null,
       costCurrency: data.costCurrency,
       costAmount: data.costAmount != null ? data.costAmount.toString() : null,
@@ -126,7 +147,7 @@ export async function updateServiceEvent(eventId: string, payload: unknown) {
 
   const updates = {
     type: data.type ?? existing.type,
-    date: data.date ?? existing.date,
+    date: data.date ? toISODateString(data.date) ?? existing.date : existing.date,
     odometerKm:
       data.odometerKm != null
         ? data.odometerKm.toString()
@@ -135,7 +156,10 @@ export async function updateServiceEvent(eventId: string, payload: unknown) {
       data.nextDueKm != null
         ? data.nextDueKm.toString()
         : existing.nextDueKm ?? null,
-    nextDueDate: data.nextDueDate ?? existing.nextDueDate ?? null,
+    nextDueDate:
+      data.nextDueDate !== undefined
+        ? toISODateString(data.nextDueDate) ?? null
+        : existing.nextDueDate ?? null,
     notes: data.notes ?? existing.notes ?? null,
     costCurrency: data.costCurrency ?? existing.costCurrency ?? 'RON',
     costAmount:
@@ -156,12 +180,13 @@ export async function updateServiceEvent(eventId: string, payload: unknown) {
     vehicle: existing.vehicle,
     payload: {
       type: updates.type,
-      date: updates.date,
+      date: data.date ?? existing.date,
       odometerKm:
         data.odometerKm ?? (existing.odometerKm ? Number(existing.odometerKm) : null),
       nextDueKm:
         data.nextDueKm ?? (existing.nextDueKm ? Number(existing.nextDueKm) : null),
-      nextDueDate: data.nextDueDate ?? existing.nextDueDate ?? null,
+      nextDueDate:
+        data.nextDueDate !== undefined ? data.nextDueDate ?? null : existing.nextDueDate ?? null,
     },
   });
 

@@ -1,29 +1,31 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq } from "drizzle-orm";
 
-import { db, odometerLogs, vehicles } from '@/db';
-import { ValidationError } from '@/lib/errors';
+import { db, odometerLogs, vehicles } from "@/db";
 import {
   ensureVehicleAccess,
   recalculateVehicleStatus,
   toNumber,
-} from '@/features/vehicles/service';
-import { odometerLogSchema } from './validators';
+} from "@/features/vehicles/service";
+import { ValidationError } from "@/lib/errors";
+
+import { odometerLogSchema } from "./validators";
 
 export async function createOdometerLog(payload: unknown) {
   const parsed = odometerLogSchema.safeParse(payload);
 
   if (!parsed.success) {
-    throw new ValidationError('Date invalid.', parsed.error.flatten());
+    throw new ValidationError("Date invalid.", parsed.error.flatten());
   }
 
   const data = parsed.data;
   const vehicle = await ensureVehicleAccess(data.orgId, data.vehicleId);
+  const dateString = data.date.toISOString().slice(0, 10);
 
   const [log] = await db
     .insert(odometerLogs)
     .values({
       vehicleId: data.vehicleId,
-      date: data.date,
+      date: dateString,
       valueKm: data.valueKm.toString(),
       source: data.source,
     })

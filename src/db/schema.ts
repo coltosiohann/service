@@ -1,3 +1,4 @@
+import { relations, sql } from 'drizzle-orm';
 import {
   pgEnum,
   pgTable,
@@ -13,7 +14,6 @@ import {
   check,
   primaryKey,
 } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
 
 export const membershipRoleEnum = pgEnum('membership_role', ['OWNER', 'ADMIN', 'MECHANIC', 'VIEWER']);
 

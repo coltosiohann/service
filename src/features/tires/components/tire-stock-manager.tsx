@@ -35,6 +35,7 @@ type TireStockItem = {
 const createSchema = tireStockCreateSchema.omit({ orgId: true });
 
 type CreateFormValues = z.infer<typeof createSchema>;
+type CreateFormInput = z.input<typeof createSchema>;
 
 type AdjustmentState = {
   quantity: number;
@@ -55,7 +56,7 @@ export function TireStockManager() {
 
   const stock = useMemo(() => data?.stock ?? [], [data]);
 
-  const form = useForm<CreateFormValues>({
+  const form = useForm<CreateFormInput, unknown, CreateFormValues>({
     resolver: zodResolver(createSchema),
     defaultValues: {
       size: '',
@@ -173,8 +174,9 @@ export function TireStockManager() {
 
       toast.success('Anvelopa a fost stearsa.');
       setAdjustments((prev) => {
-        const { [stockId]: _removed, ...rest } = prev;
-        return rest;
+        const nextState = { ...prev };
+        delete nextState[stockId];
+        return nextState;
       });
       await refetch();
     } catch (error) {
@@ -232,16 +234,16 @@ export function TireStockManager() {
                 </p>
               )}
             </div>
-            <div className="lg:col-span-2 space-y-2">
+            <div className="space-y-2 lg:col-span-2">
               <Label htmlFor="notes">Observații</Label>
               <Textarea id="notes" rows={2} {...form.register('notes')} />
               {form.formState.errors.notes && (
                 <p className="text-xs text-destructive">{form.formState.errors.notes.message}</p>
               )}
             </div>
-            <div className="lg:col-span-2 flex justify-end">
+            <div className="flex justify-end lg:col-span-2">
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 Adaugă în stoc
               </Button>
             </div>
@@ -258,7 +260,7 @@ export function TireStockManager() {
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
+            <RefreshCcw className="mr-2 size-4" />
             Actualizează
           </Button>
         </CardHeader>
@@ -297,7 +299,7 @@ export function TireStockManager() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span>{item.quantity}</span>
-                          {isLow && <Badge variant="destructive">Stoc scăzut</Badge>}
+                          {isLow && <Badge variant="danger">Stoc scăzut</Badge>}
                         </div>
                       </TableCell>
                       <TableCell>{item.minQuantity ?? 0}</TableCell>
@@ -358,7 +360,7 @@ export function TireStockManager() {
                               onClick={() => handleDelete(item.id, item.size)}
                               disabled={deletingId === item.id}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="mr-2 size-4" />
                               Sterge
                             </Button>
                           </div>

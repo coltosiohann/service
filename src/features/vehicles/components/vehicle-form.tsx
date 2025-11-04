@@ -36,12 +36,13 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
+type VehicleFormInput = z.input<typeof vehicleSchema>;
 
 export function VehicleForm() {
   const router = useRouter();
   const { orgId } = useOrg();
 
-  const form = useForm<VehicleFormValues>({
+  const form = useForm<VehicleFormInput, unknown, VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       type: 'CAR',
@@ -202,7 +203,7 @@ export function VehicleForm() {
                 <span className="text-sm font-medium">Autorizatie tonaj mare</span>
                 <input
                   type="checkbox"
-                  className="h-5 w-5 rounded border border-input accent-primary"
+                  className="size-5 rounded border border-input accent-primary"
                   {...form.register('hasHeavyTonnageAuthorization')}
                 />
               </label>
@@ -218,17 +219,7 @@ export function VehicleForm() {
             <Button type="button" variant="ghost" onClick={() => router.back()}>
               Anuleaza
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending}
-              onClick={(e) => {
-                console.log('Button clicked!', {
-                  formState: form.formState,
-                  errors: form.formState.errors,
-                  isValid: form.formState.isValid
-                });
-              }}
-            >
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? 'Se salveaza...' : 'Salveaza'}
             </Button>
           </div>
@@ -242,4 +233,3 @@ function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="text-xs text-destructive">{message}</p>;
 }
-

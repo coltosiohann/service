@@ -1,30 +1,32 @@
 "use client";
 
+import { Bell, CircleDot, Gauge, Settings, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
-import { Bell, CircleDot, Gauge, Settings, Truck } from 'lucide-react';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type NavItem = {
-  href: string;
+import type { Route } from 'next';
+import type { ReactNode } from 'react';
+
+export type AppShellNavItem = {
+  href: Route;
   label: string;
   icon: 'dashboard' | 'vehicles' | 'tires' | 'reminders' | 'settings';
 };
 
-const iconMap: Record<NavItem['icon'], ReactNode> = {
-  dashboard: <Gauge className="h-4 w-4" />,
-  vehicles: <Truck className="h-4 w-4" />,
-  tires: <CircleDot className="h-4 w-4" />,
-  reminders: <Bell className="h-4 w-4" />,
-  settings: <Settings className="h-4 w-4" />,
+const iconMap: Record<AppShellNavItem['icon'], ReactNode> = {
+  dashboard: <Gauge className="size-4" />,
+  vehicles: <Truck className="size-4" />,
+  tires: <CircleDot className="size-4" />,
+  reminders: <Bell className="size-4" />,
+  settings: <Settings className="size-4" />,
 };
 
 type AppShellProps = {
   children: ReactNode;
-  nav: NavItem[];
+  nav: AppShellNavItem[];
 };
 
 export function AppShell({ children, nav }: AppShellProps) {
@@ -35,7 +37,7 @@ export function AppShell({ children, nav }: AppShellProps) {
       <header className="border-b border-border bg-white">
         <div className="flex flex-col gap-4 px-6 pb-4 pt-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-primary font-bold text-primary-foreground">
               FC
             </div>
             <div>
@@ -56,7 +58,7 @@ export function AppShell({ children, nav }: AppShellProps) {
                   'rounded-full px-4 py-2 text-sm font-semibold',
                 )}
               >
-                <span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span className="mr-2 flex size-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                   {iconMap[item.icon]}
                 </span>
                 {item.label}

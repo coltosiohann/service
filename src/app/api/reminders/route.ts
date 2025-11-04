@@ -1,10 +1,11 @@
-import type { NextRequest } from 'next/server';
 
 import { listReminders, updateReminder } from '@/features/reminders/service';
-import { auth } from '@/lib/auth';
 import { errorResponse, jsonResponse } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {

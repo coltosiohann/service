@@ -1,9 +1,10 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { db, documents } from '@/db';
-import { NotFoundError, ValidationError } from '@/lib/errors';
 import { ensureVehicleAccess } from '@/features/vehicles/service';
 import { deleteBlobFile, uploadBlobFile } from '@/lib/blob';
+import { NotFoundError, ValidationError } from '@/lib/errors';
+
 import { uploadDocumentSchema } from './validators';
 
 const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
@@ -48,6 +49,9 @@ export async function uploadDocument(formData: FormData, userId: string) {
 
   const blob = await uploadBlobFile(path, file);
 
+  const expiresAt =
+    data.expiresAt instanceof Date ? data.expiresAt.toISOString().slice(0, 10) : null;
+
   const [record] = await db
     .insert(documents)
     .values({
@@ -56,7 +60,7 @@ export async function uploadDocument(formData: FormData, userId: string) {
       fileUrl: blob.url,
       fileName: file.name,
       uploadedBy: userId,
-      expiresAt: data.expiresAt ?? null,
+      expiresAt,
     })
     .returning();
 

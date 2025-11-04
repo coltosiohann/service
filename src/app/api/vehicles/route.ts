@@ -1,11 +1,12 @@
-import type { NextRequest } from 'next/server';
 
 import { listVehicles } from '@/features/vehicles/queries';
 import { createVehicle } from '@/features/vehicles/service';
 import { vehicleQuerySchema } from '@/features/vehicles/validators';
-import { auth } from '@/lib/auth';
 import { errorResponse, jsonResponse } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+
+import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {

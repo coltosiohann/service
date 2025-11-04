@@ -1,9 +1,10 @@
-import type { NextRequest } from 'next/server';
 
 import { createTireStock, listTireStock } from '@/features/tires/service';
-import { auth } from '@/lib/auth';
 import { errorResponse, jsonResponse } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
+
+import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {

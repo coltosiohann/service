@@ -1,20 +1,20 @@
 "use client";
 
+import { Plus, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useOrg } from '@/components/providers/org-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useApiQuery, useApiMutation } from '@/hooks/use-api';
-import { useOrg } from '@/components/providers/org-provider';
+import { useApiQuery } from '@/hooks/use-api';
 
 import { InsuranceBadge } from './insurance-badge';
 import { StatusPill } from './status-pill';
@@ -84,8 +84,6 @@ export function VehiclesTable() {
 
   const deferredQuery = useDeferredValue(query);
 
-  const deleteMutation = useApiMutation(`/api/vehicles/${deletingId}`, 'DELETE');
-
   useEffect(() => {
     if (type !== 'TRUCK') {
       setTruckTonaj('ALL');
@@ -139,7 +137,7 @@ export function VehiclesTable() {
         <CardTitle className="text-xl font-semibold">Autovehicule</CardTitle>
         <Button asChild>
           <Link href="/vehicule/creare">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Adauga vehicul
           </Link>
         </Button>
@@ -181,7 +179,7 @@ export function VehiclesTable() {
             ))}
           </div>
           <div className="relative max-w-sm flex-1 lg:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -306,7 +304,7 @@ export function VehiclesTable() {
                         }}
                         disabled={deletingId === vehicle.id}
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -319,4 +317,3 @@ export function VehiclesTable() {
     </Card>
   );
 }
-

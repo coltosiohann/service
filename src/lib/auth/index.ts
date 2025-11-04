@@ -1,11 +1,12 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import type { NextAuthConfig } from 'next-auth';
 import NextAuth from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import nodemailer from 'nodemailer';
 
 import { db } from '@/db';
 import { env } from '@/lib/env';
+
+import type { NextAuthOptions } from 'next-auth';
 
 // Only create transporter if email config is provided
 const transporter = env.EMAIL_SERVER_HOST
@@ -20,7 +21,7 @@ const transporter = env.EMAIL_SERVER_HOST
     })
   : null;
 
-const authConfig: NextAuthConfig = {
+const authConfig: NextAuthOptions = {
   adapter: DrizzleAdapter(db),
   session: {
     strategy: 'database',
@@ -30,8 +31,6 @@ const authConfig: NextAuthConfig = {
   },
   providers: [
     EmailProvider({
-      id: 'email',
-      name: 'Email',
       from: env.EMAIL_FROM,
       maxAge: 60 * 60 * 24,
       async sendVerificationRequest({ identifier, url }) {
@@ -67,9 +66,9 @@ const authConfig: NextAuthConfig = {
     session({ session, user }) {
       if (session.user && user) {
         session.user.id = user.id;
-        session.user.name = user.name;
-        session.user.email = user.email;
-        session.user.image = user.image;
+        session.user.name = user.name ?? null;
+        session.user.email = user.email ?? null;
+        session.user.image = user.image ?? null;
       }
 
       return session;
@@ -91,7 +90,7 @@ export async function auth() {
   // Authentication disabled - always return mock session with OWNER permissions
   return {
     user: {
-      id: 'mock-user-id',
+      id: '11111111-1111-1111-1111-111111111111',
       name: 'Utilizator',
       email: 'user@example.com',
       image: null,

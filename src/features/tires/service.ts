@@ -10,7 +10,7 @@ import {
   tireStockCreateSchema,
 } from './validators';
 
-type DbClient = typeof db;
+type DbClient = Pick<typeof db, 'query' | 'insert' | 'update'>;
 
 type ChangeStockParams = {
   orgId: string;
@@ -152,7 +152,7 @@ export async function adjustTireStock(payload: unknown) {
   const data = parsed.data;
 
   const result = await db.transaction(async (tx) => {
-    const updated = await changeStockQuantity(tx as DbClient, {
+    const updated = await changeStockQuantity(tx, {
       orgId: data.orgId,
       stockId: data.stockId,
       delta: data.change,
@@ -189,7 +189,7 @@ export async function consumeTires(payload: unknown) {
   }
 
   await db.transaction(async (tx) => {
-    await applyTireConsumption(tx as DbClient, parsed.data);
+    await applyTireConsumption(tx, parsed.data);
   });
 }
 

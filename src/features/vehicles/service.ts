@@ -1,11 +1,13 @@
 import { and, eq } from 'drizzle-orm';
 
 import { db, vehicles } from '@/db';
-import type { VehicleStatus } from '@/db/schema';
-import { NotFoundError, ValidationError } from '@/lib/errors';
 import { consumeTiresWithClient } from '@/features/tires/service';
+import { NotFoundError, ValidationError } from '@/lib/errors';
+
 import { computeVehicleStatus } from './status';
 import { vehiclePayloadSchema, vehicleUpdateSchema } from './validators';
+
+import type { VehicleStatus } from '@/db/schema';
 
 function normalizeNumeric(value: number | null | undefined): string | null {
   if (value == null) {
@@ -28,6 +30,17 @@ export function toNumber(value: unknown): number {
   return 0;
 }
 
+function toISODate(value: Date | string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return value;
+}
 type TireUsageItem = {
   stockId: string;
   quantity: number;
@@ -98,22 +111,22 @@ export async function createVehicle(payload: unknown) {
         vin: vehicle.vin ?? null,
         licensePlate: vehicle.licensePlate,
         currentOdometerKm: vehicle.currentOdometerKm.toString(),
-        lastOilChangeDate: vehicle.lastOilChangeDate ?? null,
-        lastRevisionDate: vehicle.lastRevisionDate ?? null,
+        lastOilChangeDate: toISODate(vehicle.lastOilChangeDate),
+        lastRevisionDate: toISODate(vehicle.lastRevisionDate),
         nextRevisionAtKm: normalizeNumeric(vehicle.nextRevisionAtKm ?? null),
-        nextRevisionDate: vehicle.nextRevisionDate ?? null,
+        nextRevisionDate: toISODate(vehicle.nextRevisionDate),
         insuranceProvider: vehicle.insuranceProvider,
         insurancePolicyNumber: vehicle.insurancePolicyNumber,
-        insuranceEndDate: vehicle.insuranceEndDate ?? null,
+        insuranceEndDate: toISODate(vehicle.insuranceEndDate),
         hasHeavyTonnageAuthorization:
           vehicle.type === 'TRUCK' ? Boolean(vehicle.hasHeavyTonnageAuthorization) : null,
-        tachographCheckDate: vehicle.type === 'TRUCK' ? vehicle.tachographCheckDate ?? null : null,
+        tachographCheckDate: vehicle.type === 'TRUCK' ? toISODate(vehicle.tachographCheckDate) : null,
         status: computedStatus,
       })
       .returning();
 
     if (created && sanitizedUsage.length > 0) {
-      await consumeTiresWithClient(tx as typeof db, {
+      await consumeTiresWithClient(tx, {
         orgId: created.orgId,
         vehicleId: created.id,
         reason: tireUsageReason ?? null,
@@ -157,6 +170,29 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
       nextRevisionDate: updateData.nextRevisionDate ?? existing.nextRevisionDate ?? null,
     };
 
+    const lastOilChangeDate =
+      updateData.lastOilChangeDate !== undefined
+        ? toISODate(updateData.lastOilChangeDate)
+        : existing.lastOilChangeDate ?? null;
+    const lastRevisionDate =
+      updateData.lastRevisionDate !== undefined
+        ? toISODate(updateData.lastRevisionDate)
+        : existing.lastRevisionDate ?? null;
+    const nextRevisionDateValue =
+      updateData.nextRevisionDate !== undefined
+        ? toISODate(updateData.nextRevisionDate)
+        : existing.nextRevisionDate ?? null;
+    const insuranceEndDate =
+      updateData.insuranceEndDate !== undefined
+        ? toISODate(updateData.insuranceEndDate)
+        : existing.insuranceEndDate ?? null;
+    const tachographCheckDate =
+      merged.type === 'TRUCK'
+        ? updateData.tachographCheckDate !== undefined
+          ? toISODate(updateData.tachographCheckDate)
+          : existing.tachographCheckDate ?? null
+        : null;
+
     const computedStatus: VehicleStatus =
       updateData.status ??
       computeVehicleStatus({
@@ -174,16 +210,16 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
         vin: merged.vin ?? null,
         licensePlate: merged.licensePlate,
         currentOdometerKm: toNumber(merged.currentOdometerKm).toString(),
-        lastOilChangeDate: merged.lastOilChangeDate ?? null,
-        lastRevisionDate: merged.lastRevisionDate ?? null,
+        lastOilChangeDate,
+        lastRevisionDate,
         nextRevisionAtKm: normalizeNumeric(merged.nextRevisionAtKm),
-        nextRevisionDate: merged.nextRevisionDate ?? null,
+        nextRevisionDate: nextRevisionDateValue,
         insuranceProvider: merged.insuranceProvider,
         insurancePolicyNumber: merged.insurancePolicyNumber,
-        insuranceEndDate: merged.insuranceEndDate ?? null,
+        insuranceEndDate,
         hasHeavyTonnageAuthorization:
           merged.type === 'TRUCK' ? Boolean(merged.hasHeavyTonnageAuthorization) : null,
-        tachographCheckDate: merged.type === 'TRUCK' ? merged.tachographCheckDate ?? null : null,
+        tachographCheckDate,
         status: computedStatus,
         updatedAt: new Date(),
       })
@@ -193,7 +229,7 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
     const usage = sanitizeTireUsage(updateData.type ?? existing.type, tiresUsage);
 
     if (updated && usage.length > 0) {
-      await consumeTiresWithClient(tx as typeof db, {
+      await consumeTiresWithClient(tx, {
         orgId: existing.orgId,
         vehicleId,
         reason: tireUsageReason ?? null,

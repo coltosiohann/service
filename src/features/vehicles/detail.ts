@@ -1,9 +1,9 @@
-import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
-import { ensureVehicleAccess, toNumber } from '@/features/vehicles/service';
-import { listServiceEvents } from '@/features/service-events/service';
-import { listOdometerLogs } from '@/features/odometer/service';
 import { listDocuments } from '@/features/documents/service';
+import { listOdometerLogs } from '@/features/odometer/service';
 import { listReminders } from '@/features/reminders/service';
+import { listServiceEvents } from '@/features/service-events/service';
+import { ensureVehicleAccess, toNumber } from '@/features/vehicles/service';
+import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
 
 export async function getVehicleDetail(orgId: string, vehicleId: string) {
   const vehicle = await ensureVehicleAccess(orgId, vehicleId);

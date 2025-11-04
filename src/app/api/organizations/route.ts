@@ -1,7 +1,8 @@
-import { db, memberships, organizations } from '@/db';
-import { auth } from '@/lib/auth';
-import { errorResponse, jsonResponse } from '@/lib/api';
 import { eq } from 'drizzle-orm';
+
+import { db, memberships, organizations } from '@/db';
+import { errorResponse, jsonResponse } from '@/lib/api';
+import { auth } from '@/lib/auth';
 
 export async function GET() {
   try {

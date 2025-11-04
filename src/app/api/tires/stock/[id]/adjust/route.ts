@@ -1,9 +1,10 @@
-import type { NextRequest } from 'next/server';
 
 import { adjustTireStock } from '@/features/tires/service';
-import { auth } from '@/lib/auth';
 import { errorResponse, jsonResponse } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+
+import type { NextRequest } from 'next/server';
 
 type Params = {
   params: { id: string };

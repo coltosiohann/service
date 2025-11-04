@@ -4,47 +4,49 @@ import { and, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db, reminders, serviceEvents, vehicles } from '@/db';
-import { getDefaultOrg } from '@/lib/default-org';
-import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
 import { toNumber } from '@/features/vehicles/service';
+import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
+import { getDefaultOrg } from '@/lib/default-org';
 import { cn, formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getDashboardData(orgId: string) {
+  const orgActiveCondition = and(eq(vehicles.orgId, orgId), isNull(vehicles.deletedAt));
+
   const [totalVehicles] = await db
     .select({ count: sql<number>`count(*)` })
     .from(vehicles)
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt));
+    .where(orgActiveCondition);
 
   const [overdueVehicles] = await db
     .select({ count: sql<number>`count(*)` })
     .from(vehicles)
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
-    .where(eq(vehicles.status, 'OVERDUE'));
+    .where(and(orgActiveCondition, eq(vehicles.status, 'OVERDUE')));
 
   const [dueSoonVehicles] = await db
     .select({ count: sql<number>`count(*)` })
     .from(vehicles)
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
-    .where(eq(vehicles.status, 'DUE_SOON'));
+    .where(and(orgActiveCondition, eq(vehicles.status, 'DUE_SOON')));
 
   const today = new Date();
   const inThirtyDays = new Date(today);
   inThirtyDays.setDate(inThirtyDays.getDate() + 30);
+  const todayString = today.toISOString().slice(0, 10);
+  const inThirtyDaysString = inThirtyDays.toISOString().slice(0, 10);
 
   const [insuranceExpiring] = await db
     .select({ count: sql<number>`count(*)` })
     .from(vehicles)
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
-    .where(isNotNull(vehicles.insuranceEndDate))
-    .where(lte(vehicles.insuranceEndDate, inThirtyDays))
-    .where(gt(vehicles.insuranceEndDate, today));
+    .where(
+      and(
+        orgActiveCondition,
+        isNotNull(vehicles.insuranceEndDate),
+        lte(vehicles.insuranceEndDate, inThirtyDaysString),
+        gt(vehicles.insuranceEndDate, todayString),
+      ),
+    );
 
   const upcomingReminders = await db
     .select({
@@ -63,11 +65,14 @@ async function getDashboardData(orgId: string) {
     })
     .from(reminders)
     .innerJoin(vehicles, eq(reminders.vehicleId, vehicles.id))
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
-    .where(eq(reminders.status, 'PENDING'))
-    .where(isNotNull(reminders.dueDate))
-    .where(lte(reminders.dueDate, inThirtyDays))
+    .where(
+      and(
+        orgActiveCondition,
+        eq(reminders.status, 'PENDING'),
+        isNotNull(reminders.dueDate),
+        lte(reminders.dueDate, inThirtyDaysString),
+      ),
+    )
     .orderBy(reminders.dueDate)
     .limit(8);
 
@@ -84,8 +89,7 @@ async function getDashboardData(orgId: string) {
     })
     .from(serviceEvents)
     .innerJoin(vehicles, eq(serviceEvents.vehicleId, vehicles.id))
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
+    .where(orgActiveCondition)
     .orderBy(desc(serviceEvents.date))
     .limit(5);
 
@@ -105,8 +109,7 @@ async function getDashboardData(orgId: string) {
       status: vehicles.status,
     })
     .from(vehicles)
-    .where(eq(vehicles.orgId, orgId))
-    .where(isNull(vehicles.deletedAt))
+    .where(orgActiveCondition)
     .orderBy(desc(vehicles.updatedAt))
     .limit(6);
 
@@ -324,3 +327,10 @@ function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
+
+
+
+
+
+
+

@@ -1,8 +1,9 @@
 import { and, desc, eq } from 'drizzle-orm';
 
 import { db, reminders, vehicles } from '@/db';
-import { NotFoundError, ValidationError } from '@/lib/errors';
 import { toNumber } from '@/features/vehicles/service';
+import { NotFoundError, ValidationError } from '@/lib/errors';
+
 import { reminderQuerySchema, reminderUpdateSchema } from './validators';
 
 export async function listReminders(query: unknown) {
@@ -44,7 +45,8 @@ export async function listReminders(query: unknown) {
   const now = new Date();
 
   const enriched = rows.map((row) => {
-    const dueDate = row.reminder.dueDate ?? null;
+    const dueDateRaw = row.reminder.dueDate;
+    const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
     const dueKm = row.reminder.dueKm != null ? Number(row.reminder.dueKm) : null;
     const currentKm = toNumber(row.currentOdometerKm);
 
@@ -87,7 +89,9 @@ export async function listReminders(query: unknown) {
 }
 
 export async function updateReminder(reminderId: string, payload: unknown) {
-  const parsed = reminderUpdateSchema.safeParse({ ...payload, id: reminderId });
+  const payloadObject =
+    typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+  const parsed = reminderUpdateSchema.safeParse({ ...payloadObject, id: reminderId });
 
   if (!parsed.success) {
     throw new ValidationError('Date reminder invalide.', parsed.error.flatten());

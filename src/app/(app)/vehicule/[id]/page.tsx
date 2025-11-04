@@ -1,15 +1,15 @@
+import { Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pencil } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDefaultOrg } from '@/lib/default-org';
-import { getVehicleDetail } from '@/features/vehicles/detail';
 import { InsuranceBadge } from '@/features/vehicles/components/insurance-badge';
 import { StatusPill } from '@/features/vehicles/components/status-pill';
 import { TachographBadge } from '@/features/vehicles/components/tachograph-badge';
+import { getVehicleDetail } from '@/features/vehicles/detail';
+import { getDefaultOrg } from '@/lib/default-org';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 type PageProps = {
@@ -37,7 +37,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         </div>
         <Link href={`/vehicule/${params.id}/editare`}>
           <Button>
-            <Pencil className="mr-2 h-4 w-4" />
+            <Pencil className="mr-2 size-4" />
             Editeaza
           </Button>
         </Link>
@@ -199,15 +199,16 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               <EmptyState message="Nu exista documente incarcate." />
             ) : (
               documents.map((doc) => (
-                <Link
+                <a
                   key={doc.id}
-                  href={doc.fileUrl}
+                  href={doc.fileUrl ?? '#'}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm hover:bg-muted/60"
                 >
                   <span className="font-medium">{doc.fileName}</span>
                   <span className="text-xs text-muted-foreground">{formatDate(doc.expiresAt)}</span>
-                </Link>
+                </a>
               ))
             )}
           </CardContent>

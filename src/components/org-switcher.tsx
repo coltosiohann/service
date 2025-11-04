@@ -1,9 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { useOrg } from '@/components/providers/org-provider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useOrg } from "@/components/providers/org-provider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import type { Route } from "next";
 
 export function OrgSwitcher() {
   const { orgId, setOrgId, organizations } = useOrg();
@@ -19,21 +21,22 @@ export function OrgSwitcher() {
     setOrgId(value);
     document.cookie = `fleetcare_org=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
     const params = new URLSearchParams(searchParams);
-    params.set('orgId', value);
-    router.push(`${pathname}?${params.toString()}`);
+    params.set("orgId", value);
+    const href = `${pathname}?${params.toString()}` as unknown as Route;
+    router.push(href);
   };
 
-  const current = orgId ?? organizations[0]?.orgId ?? '';
+  const current = orgId ?? organizations[0]?.orgId ?? "";
 
   return (
     <Select value={current} onValueChange={handleChange}>
       <SelectTrigger className="w-64">
-        <SelectValue placeholder="Selectați organizația" />
+        <SelectValue placeholder="Selecta?i organiza?ia" />
       </SelectTrigger>
       <SelectContent>
         {organizations.map((org) => (
           <SelectItem key={org.orgId} value={org.orgId}>
-            {org.name} — {org.role}
+            {org.name} � {org.role}
           </SelectItem>
         ))}
       </SelectContent>

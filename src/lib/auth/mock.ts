@@ -9,7 +9,7 @@ import { getDefaultOrg } from '@/lib/default-org';
  * Mock session for when authentication is disabled
  */
 export async function mockAuth() {
-  const org = await getDefaultOrg();
+  await getDefaultOrg();
 
   return {
     user: {
@@ -27,7 +27,8 @@ export async function mockAuth() {
  */
 export async function mockRequireOrgMembership(userId: string, orgId: string) {
   // Authentication disabled - always allow access
-  return;
+  void userId;
+  void orgId;
 }
 
 /**
@@ -35,5 +36,7 @@ export async function mockRequireOrgMembership(userId: string, orgId: string) {
  */
 export async function mockRequireOrgRoleAtLeast(userId: string, orgId: string, role: string) {
   // Authentication disabled - always allow access with OWNER permissions
-  return;
+  void userId;
+  void orgId;
+  void role;
 }

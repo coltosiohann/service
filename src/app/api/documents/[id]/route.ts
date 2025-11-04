@@ -1,9 +1,10 @@
-import type { NextRequest } from 'next/server';
 
 import { deleteDocument } from '@/features/documents/service';
-import { auth } from '@/lib/auth';
 import { errorResponse, successMessage } from '@/lib/api';
+import { auth } from '@/lib/auth';
 import { requireOrgRoleAtLeast } from '@/lib/auth/membership';
+
+import type { NextRequest } from 'next/server';
 
 type Params = {
   params: { id: string };

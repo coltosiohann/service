@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import { getDefaultOrg } from '@/lib/default-org';
-import { getVehicleDetail } from '@/features/vehicles/detail';
 import { VehicleEditForm } from '@/features/vehicles/components/vehicle-edit-form';
+import { getVehicleDetail } from '@/features/vehicles/detail';
+import { getDefaultOrg } from '@/lib/default-org';
 
 type PageProps = {
   params: { id: string };
@@ -18,6 +18,18 @@ export default async function EditVehiclePage({ params }: PageProps) {
     notFound();
   }
 
+  const parseDate = (value: Date | string | null | undefined) =>
+    value ? new Date(value) : null;
+
+  const formVehicle = {
+    ...detail.vehicle,
+    lastOilChangeDate: parseDate(detail.vehicle.lastOilChangeDate),
+    lastRevisionDate: parseDate(detail.vehicle.lastRevisionDate),
+    nextRevisionDate: parseDate(detail.vehicle.nextRevisionDate),
+    insuranceEndDate: parseDate(detail.vehicle.insuranceEndDate),
+    tachographCheckDate: parseDate(detail.vehicle.tachographCheckDate),
+  };
+
   return (
     <div className="max-w-4xl space-y-6">
       <div>
@@ -26,7 +38,7 @@ export default async function EditVehiclePage({ params }: PageProps) {
           {detail.vehicle.make} {detail.vehicle.model} - {detail.vehicle.licensePlate}
         </p>
       </div>
-      <VehicleEditForm vehicle={detail.vehicle} />
+      <VehicleEditForm vehicle={formVehicle} />
     </div>
   );
 }

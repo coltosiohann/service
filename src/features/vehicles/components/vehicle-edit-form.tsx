@@ -2,8 +2,8 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -55,6 +55,27 @@ const vehicleSchema = z.object({
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
+type VehicleFormInput = z.input<typeof vehicleSchema>;
+
+type VehicleUpdatePayload = {
+  orgId: string;
+  type: 'CAR' | 'TRUCK';
+  make: string;
+  model: string;
+  year: number;
+  vin?: string;
+  licensePlate: string;
+  currentOdometerKm: number;
+  nextRevisionDate: Date | null;
+  nextRevisionAtKm: number | null;
+  insuranceProvider: string;
+  insurancePolicyNumber: string;
+  insuranceEndDate: Date | null;
+  hasHeavyTonnageAuthorization?: boolean;
+  tachographCheckDate: Date | null;
+  tiresUsage?: Array<{ stockId: string; quantity: number; reason?: string }>;
+  tireUsageReason?: string;
+};
 
 type VehicleEditFormProps = {
   vehicle: {
@@ -80,7 +101,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   const router = useRouter();
   const { orgId } = useOrg();
 
-  const form = useForm<VehicleFormValues>({
+  const form = useForm<VehicleFormInput, unknown, VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       type: vehicle.type,
@@ -144,7 +165,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       return;
     }
 
-    const payload = {
+    const payload: VehicleUpdatePayload = {
       orgId,
       type: values.type,
       make: values.make,
@@ -292,7 +313,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
                   <span className="text-sm font-medium">Autorizatie tonaj mare</span>
                   <input
                     type="checkbox"
-                    className="h-5 w-5 rounded border border-input accent-primary"
+                    className="size-5 rounded border border-input accent-primary"
                     {...form.register('hasHeavyTonnageAuthorization')}
                   />
                 </label>
@@ -330,7 +351,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
 
                 {stockOptions.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-muted p-4 text-sm text-muted-foreground">
-                    Nu exista stoc disponibil. Accesati pagina "Stoc anvelope" pentru a adauga anvelope.
+                    Nu exista stoc disponibil. Accesati pagina &quot;Stoc anvelope&quot; pentru a adauga anvelope.
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -371,7 +392,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
                             onClick={() => removeTire(index)}
                             className="justify-self-start md:justify-self-end"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="size-4 text-destructive" />
                           </Button>
                         </div>
                         <FieldError message={form.formState.errors.tiresUsage?.[index]?.stockId?.message} />

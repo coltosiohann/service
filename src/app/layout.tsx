@@ -1,30 +1,33 @@
-import type { Metadata } from 'next';
-import localFont from 'next/font/local';
-import './globals.css';
+import localFont from "next/font/local";
 
-import { Providers } from '@/components/providers';
+import { Providers } from "@/components/providers";
+
+import type { Metadata } from "next";
+
+
+import "./globals.css";
 
 const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-  weight: '100 900',
-  display: 'swap',
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+  display: "swap",
 });
 
 const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-  weight: '100 900',
-  display: 'swap',
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: 'FleetCare',
-    template: '%s | FleetCare',
+    default: "FleetCare",
+    template: "%s | FleetCare",
   },
-  description: 'Platformă completă pentru gestionarea flotei și a service-ului.',
-  metadataBase: new URL('https://fleetcare.example.com'),
+  description: "Platforma completa pentru gestionarea flotei ETi a service-ului.",
+  metadataBase: new URL("https://fleetcare.example.com"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,11 +1,13 @@
-import { cache } from 'react';
 import { and, eq } from 'drizzle-orm';
+import { cache } from 'react';
 
 import { db } from '@/db';
 import { memberships, organizations } from '@/db/schema';
 import { ForbiddenError } from '@/lib/errors';
-import type { Role } from './roles';
+
 import { isAtLeast } from './roles';
+
+import type { Role } from './roles';
 
 export const getMembershipsForUser = cache(async (userId: string) => {
   if (!userId) {

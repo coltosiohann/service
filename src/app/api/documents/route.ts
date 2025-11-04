@@ -1,10 +1,11 @@
-import type { NextRequest } from 'next/server';
 
-import { deleteDocument, listDocuments, uploadDocument } from '@/features/documents/service';
+import { listDocuments, uploadDocument } from '@/features/documents/service';
+import { errorResponse, jsonResponse } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { errorResponse, jsonResponse, successMessage } from '@/lib/api';
 import { requireOrgMembership, requireOrgRoleAtLeast } from '@/lib/auth/membership';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
