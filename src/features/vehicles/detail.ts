@@ -1,0 +1,36 @@
+import { computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
+import { ensureVehicleAccess, toNumber } from '@/features/vehicles/service';
+import { listServiceEvents } from '@/features/service-events/service';
+import { listOdometerLogs } from '@/features/odometer/service';
+import { listDocuments } from '@/features/documents/service';
+import { listReminders } from '@/features/reminders/service';
+
+export async function getVehicleDetail(orgId: string, vehicleId: string) {
+  const vehicle = await ensureVehicleAccess(orgId, vehicleId);
+
+  const [events, logs, docs, reminders] = await Promise.all([
+    listServiceEvents(vehicleId, orgId),
+    listOdometerLogs(vehicleId, orgId),
+    listDocuments(vehicleId, orgId),
+    listReminders({ orgId, vehicleId }),
+  ]);
+
+  const insuranceStatus = computeInsuranceStatus(vehicle.insuranceEndDate ?? null);
+  const tachographStatus =
+    vehicle.type === 'TRUCK' ? computeTachographStatus(vehicle.tachographCheckDate ?? null) : null;
+
+  return {
+    vehicle: {
+      ...vehicle,
+      currentOdometerKm: toNumber(vehicle.currentOdometerKm ?? 0),
+      nextRevisionAtKm:
+        vehicle.nextRevisionAtKm != null ? toNumber(vehicle.nextRevisionAtKm) : null,
+      insuranceStatus,
+      tachographStatus,
+    },
+    serviceEvents: events,
+    odometerLogs: logs,
+    documents: docs,
+    reminders,
+  };
+}
