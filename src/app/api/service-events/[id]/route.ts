@@ -1,9 +1,7 @@
 
 import { deleteServiceEvent, updateServiceEvent } from '@/features/service-events/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
-import { auth } from '@/lib/auth';
 import { getDefaultOrgId } from '@/lib/default-org';
-import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
 
@@ -13,14 +11,7 @@ type Params = {
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
-    }
-
-    enforceRateLimit(`service-event-edit:${session.user.id}`, { windowMs: 60_000, max: 15 });
-
+    // Authentication disabled
     const payload = await request.json();
     const defaultOrgId = await getDefaultOrgId();
 
@@ -37,11 +28,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
-    }
+    // Authentication disabled
 
     const event = await deleteServiceEvent(params.id);
 

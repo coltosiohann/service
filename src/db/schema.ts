@@ -102,6 +102,7 @@ export const vehicles = pgTable(
     nextRevisionDate: date('next_revision_date'),
       insuranceProvider: text('insurance_provider'),
       insurancePolicyNumber: text('insurance_policy_number'),
+      insuranceStartDate: date('insurance_start_date'),
       insuranceEndDate: date('insurance_end_date'),
       copieConformaStartDate: date('copie_conforma_start_date'),
       copieConformaExpiryDate: date('copie_conforma_expiry_date'),

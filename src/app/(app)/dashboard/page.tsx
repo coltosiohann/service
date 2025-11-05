@@ -116,8 +116,10 @@ async function getDashboardData(orgId: string) {
       currentOdometerKm: vehicles.currentOdometerKm,
       nextRevisionDate: vehicles.nextRevisionDate,
       nextRevisionAtKm: vehicles.nextRevisionAtKm,
+      insuranceStartDate: vehicles.insuranceStartDate,
       insuranceEndDate: vehicles.insuranceEndDate,
       tachographCheckDate: vehicles.tachographCheckDate,
+      copieConformaStartDate: vehicles.copieConformaStartDate,
       copieConformaExpiryDate: vehicles.copieConformaExpiryDate,
       hasHeavyTonnageAuthorization: vehicles.hasHeavyTonnageAuthorization,
       status: vehicles.status,
@@ -281,6 +283,10 @@ export default async function DashboardPage() {
                               : 'Activa'}
                         </dd>
                       </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Incepand cu</dt>
+                        <dd>{formatDate(vehicle.insuranceStartDate)}</dd>
+                      </div>
                       {vehicle.type === 'TRUCK' && (
                         <>
                           <div className="flex justify-between">
@@ -361,8 +367,6 @@ function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
-
-
 
 
 

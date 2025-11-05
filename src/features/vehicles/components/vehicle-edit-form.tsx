@@ -30,8 +30,8 @@ const vehicleSchema = z.object({
   currentOdometerKm: z.coerce.number().nonnegative('Kilometrajul trebuie sa fie pozitiv.'),
   nextRevisionDate: z.string().optional(),
   nextRevisionAtKm: z.string().optional(),
-  insuranceProvider: z.string().min(1, 'Asiguratorul este obligatoriu.'),
   insurancePolicyNumber: z.string().min(1, 'Numarul politei este obligatoriu.'),
+  insuranceStartDate: z.string().optional(),
   insuranceEndDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
   tachographCheckDate: z.string().optional(),
@@ -67,13 +67,12 @@ type VehicleUpdatePayload = {
   currentOdometerKm: number;
   nextRevisionDate: Date | null;
   nextRevisionAtKm: number | null;
-  insuranceProvider: string;
   insurancePolicyNumber: string;
+  insuranceStartDate: Date | null;
   insuranceEndDate: Date | null;
   hasHeavyTonnageAuthorization?: boolean;
   tachographCheckDate: Date | null;
   copieConformaStartDate: Date | null;
-  copieConformaExpiryDate: Date | null;
   tiresUsage?: Array<{ stockId: string; quantity: number; reason?: string }>;
   tireUsageReason?: string;
 };
@@ -90,13 +89,13 @@ type VehicleEditFormProps = {
     currentOdometerKm: string | number;
     nextRevisionDate: Date | null;
     nextRevisionAtKm: string | number | null;
-    insuranceProvider: string | null;
     insurancePolicyNumber: string | null;
-    insuranceEndDate: Date | null;
+    insuranceStartDate: Date | string | null;
+    insuranceEndDate: Date | string | null;
     hasHeavyTonnageAuthorization: boolean | null;
-    tachographCheckDate: Date | null;
-    copieConformaStartDate: Date | null;
-    copieConformaExpiryDate: Date | null;
+    tachographCheckDate: Date | string | null;
+    copieConformaStartDate: Date | string | null;
+    copieConformaExpiryDate: Date | string | null;
   };
 };
 
@@ -119,8 +118,10 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
         ? new Date(vehicle.nextRevisionDate).toISOString().split('T')[0]
         : '',
       nextRevisionAtKm: vehicle.nextRevisionAtKm ? String(vehicle.nextRevisionAtKm) : '',
-      insuranceProvider: vehicle.insuranceProvider || '',
       insurancePolicyNumber: vehicle.insurancePolicyNumber || '',
+      insuranceStartDate: vehicle.insuranceStartDate
+        ? new Date(vehicle.insuranceStartDate).toISOString().split('T')[0]
+        : '',
       insuranceEndDate: vehicle.insuranceEndDate
         ? new Date(vehicle.insuranceEndDate).toISOString().split('T')[0]
         : '',
@@ -158,7 +159,10 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
     if (typeValue !== 'TRUCK') {
       form.setValue('tiresUsage', []);
       form.setValue('tireUsageReason', '');
-      form.clearErrors(['tiresUsage', 'tireUsageReason']);
+      form.setValue('hasHeavyTonnageAuthorization', false);
+      form.setValue('tachographCheckDate', '');
+      form.setValue('copieConformaStartDate', '');
+      form.clearErrors(['tiresUsage', 'tireUsageReason', 'tachographCheckDate', 'copieConformaStartDate']);
     }
   }, [typeValue, form]);
 
@@ -175,8 +179,8 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       currentOdometerKm: values.currentOdometerKm,
       nextRevisionDate: values.nextRevisionDate ? new Date(values.nextRevisionDate) : null,
       nextRevisionAtKm: values.nextRevisionAtKm ? Number(values.nextRevisionAtKm) : null,
-      insuranceProvider: values.insuranceProvider,
       insurancePolicyNumber: values.insurancePolicyNumber,
+      insuranceStartDate: values.insuranceStartDate ? new Date(values.insuranceStartDate) : null,
       insuranceEndDate: values.insuranceEndDate ? new Date(values.insuranceEndDate) : null,
       hasHeavyTonnageAuthorization:
         values.type === 'TRUCK'
@@ -189,10 +193,6 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       copieConformaStartDate:
         values.type === 'TRUCK' && values.copieConformaStartDate
           ? new Date(values.copieConformaStartDate)
-          : null,
-      copieConformaExpiryDate:
-        values.type === 'TRUCK' && values.copieConformaStartDate
-          ? new Date(new Date(values.copieConformaStartDate).getFullYear() + 1, new Date(values.copieConformaStartDate).getMonth(), new Date(values.copieConformaStartDate).getDate())
           : null,
     };
 
@@ -298,14 +298,14 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
 
           <section className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="insuranceProvider">Asigurare - furnizor</Label>
-              <Input id="insuranceProvider" {...form.register('insuranceProvider')} />
-              <FieldError message={form.formState.errors.insuranceProvider?.message} />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="insurancePolicyNumber">Asigurare - nr. polita</Label>
               <Input id="insurancePolicyNumber" {...form.register('insurancePolicyNumber')} />
               <FieldError message={form.formState.errors.insurancePolicyNumber?.message} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="insuranceStartDate">Valabila de la</Label>
+              <Input id="insuranceStartDate" type="date" {...form.register('insuranceStartDate')} />
+              <FieldError message={form.formState.errors.insuranceStartDate?.message} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="insuranceEndDate">Valabila pana la</Label>

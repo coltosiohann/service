@@ -1,19 +1,13 @@
 
 import { listReminders, updateReminder } from '@/features/reminders/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
-import { auth } from '@/lib/auth';
 import { getDefaultOrgId } from '@/lib/default-org';
-import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
-    }
+    // Authentication disabled
 
     const url = new URL(request.url);
     const defaultOrgId = await getDefaultOrgId();
@@ -34,14 +28,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesară.' }, { status: 401 });
-    }
-
-    enforceRateLimit(`reminders:${session.user.id}`, { windowMs: 60_000, max: 20 });
-
+    // Authentication disabled
     const body = await request.json();
     const defaultOrgId = await getDefaultOrgId();
 

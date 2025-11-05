@@ -1,18 +1,12 @@
 import { listDocuments, uploadDocument } from '@/features/documents/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
-import { auth } from '@/lib/auth';
 import { getDefaultOrgId } from '@/lib/default-org';
-import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesar��.' }, { status: 401 });
-    }
+    // Authentication disabled
 
     const url = new URL(request.url);
     const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
@@ -28,13 +22,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesar��.' }, { status: 401 });
-    }
-
-    enforceRateLimit(`documents:${session.user.id}`, { windowMs: 60_000, max: 8 });
+    // Authentication disabled
 
     const formData = await request.formData();
     const defaultOrgId = await getDefaultOrgId();
@@ -44,7 +32,7 @@ export async function POST(request: NextRequest) {
       formData.set('orgId', defaultOrgId);
     }
 
-    const document = await uploadDocument(formData, session.user.id);
+    const document = await uploadDocument(formData, 'default-user');
 
     return jsonResponse({ document }, { status: 201 });
   } catch (error) {

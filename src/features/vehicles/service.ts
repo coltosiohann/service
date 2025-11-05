@@ -68,7 +68,7 @@ function sanitizeTireUsage(
   vehicleType: string,
   usage: TireUsageItem[] | undefined,
 ): TireUsageItem[] {
-  if (vehicleType !== 'TRUCK' || !Array.isArray(usage)) {
+  if (!Array.isArray(usage)) {
     return [];
   }
 
@@ -139,8 +139,8 @@ export async function createVehicle(payload: unknown) {
         lastRevisionDate: toISODate(vehicle.lastRevisionDate),
         nextRevisionAtKm: normalizeNumeric(vehicle.nextRevisionAtKm ?? null),
         nextRevisionDate: toISODate(vehicle.nextRevisionDate),
-        insuranceProvider: vehicle.insuranceProvider,
         insurancePolicyNumber: vehicle.insurancePolicyNumber,
+        insuranceStartDate: toISODate(vehicle.insuranceStartDate),
         insuranceEndDate: toISODate(vehicle.insuranceEndDate),
         copieConformaStartDate: copieConformaStart,
         copieConformaExpiryDate: copieConformaExpiry,
@@ -208,10 +208,24 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
       updateData.nextRevisionDate !== undefined
         ? toISODate(updateData.nextRevisionDate)
         : existing.nextRevisionDate ?? null;
+    const insuranceStartDate =
+      updateData.insuranceStartDate !== undefined
+        ? toISODate(updateData.insuranceStartDate)
+        : existing.insuranceStartDate ?? null;
     const insuranceEndDate =
       updateData.insuranceEndDate !== undefined
         ? toISODate(updateData.insuranceEndDate)
         : existing.insuranceEndDate ?? null;
+    const rawCopieConformaStart =
+      merged.type === 'TRUCK'
+        ? (updateData.copieConformaStartDate !== undefined
+            ? updateData.copieConformaStartDate
+            : existing.copieConformaStartDate ?? null)
+        : null;
+    const copieConformaStartDate =
+      merged.type === 'TRUCK' ? toISODate(rawCopieConformaStart) : null;
+    const copieConformaExpiryDate =
+      merged.type === 'TRUCK' ? computeCopieConformaExpiry(rawCopieConformaStart) : null;
     const tachographCheckDate =
       merged.type === 'TRUCK'
         ? updateData.tachographCheckDate !== undefined
@@ -240,9 +254,11 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
         lastRevisionDate,
         nextRevisionAtKm: normalizeNumeric(merged.nextRevisionAtKm),
         nextRevisionDate: nextRevisionDateValue,
-        insuranceProvider: merged.insuranceProvider,
         insurancePolicyNumber: merged.insurancePolicyNumber,
+        insuranceStartDate,
         insuranceEndDate,
+        copieConformaStartDate,
+        copieConformaExpiryDate,
         hasHeavyTonnageAuthorization:
           merged.type === 'TRUCK' ? Boolean(merged.hasHeavyTonnageAuthorization) : null,
         tachographCheckDate,

@@ -1,5 +1,5 @@
-import { neon } from '@neondatabase/serverless';
-import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { Pool } from '@neondatabase/serverless';
+import { drizzle, type NeonDatabase } from 'drizzle-orm/neon-serverless';
 
 import { env } from '@/lib/env';
 
@@ -7,11 +7,11 @@ import * as schema from './schema';
 
 declare global {
   // eslint-disable-next-line no-var
-  var __db__: NeonHttpDatabase<typeof schema> | undefined;
+  var __db__: NeonDatabase<typeof schema> | undefined;
 }
 
-function createClient(): NeonHttpDatabase<typeof schema> {
-  const connection = neon(env.NEON_POOLER_URL ?? env.DATABASE_URL);
+function createClient(): NeonDatabase<typeof schema> {
+  const connection = new Pool({ connectionString: env.NEON_POOLER_URL ?? env.DATABASE_URL });
   return drizzle(connection, { schema });
 }
 

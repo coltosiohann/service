@@ -27,7 +27,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { vehicle, serviceEvents, odometerLogs, documents, reminders } = detail;
+  const { vehicle, serviceEvents, odometerLogs, documents, reminders, tireMovements } = detail;
 
   return (
     <div className="space-y-6">
@@ -77,14 +77,16 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         <Card>
           <CardHeader>
             <CardTitle>Asigurare</CardTitle>
-            <CardDescription>
-              {vehicle.insuranceProvider ?? 'Furnizor necunoscut'}
-            </CardDescription>
+            <CardDescription>Detalii valabilitate polita</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span>Nr. polita</span>
-              <span className="font-medium">{vehicle.insurancePolicyNumber ?? ''}</span>
+              <span className="font-medium">{vehicle.insurancePolicyNumber ?? '-'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Valabila de la</span>
+              <span className="font-medium">{formatDate(vehicle.insuranceStartDate)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Valabila pana la</span>
@@ -134,7 +136,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               </div>
               <TachographBadge state={vehicle.tachographStatus} />
               <div className="flex items-center justify-between text-sm">
-                <span>Copie Conforma - Expira la</span>
+                <span>Copie conforma - de la</span>
+                <span className="font-medium">{formatDate(vehicle.copieConformaStartDate)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Copie conforma - expira la</span>
                 <span className="font-medium">{formatDate(vehicle.copieConformaExpiryDate)}</span>
               </div>
               <CopieConformaBadge state={vehicle.copieConformaStatus} />
@@ -143,7 +149,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Istoric service</CardTitle>
@@ -187,6 +193,34 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 <div key={log.id} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm">
                   <span>{formatDate(log.date)}</span>
                   <span className="font-medium">{Number(log.valueKm).toLocaleString('ro-RO')} km</span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Anvelope</CardTitle>
+            <CardDescription>Istoric anvelope consumate.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tireMovements.length === 0 ? (
+              <EmptyState message="Nu exista miscari de anvelope." />
+            ) : (
+              tireMovements.map((movement) => (
+                <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{movement.size}</span>
+                    <span className="text-muted-foreground">{formatDate(movement.createdAt)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{movement.brand ?? '-'}</span>
+                    <Badge variant={movement.change < 0 ? 'danger' : 'secondary'}>
+                      {movement.change > 0 ? '+' : ''}{movement.change}
+                    </Badge>
+                  </div>
+                  {movement.reason && <p className="mt-2 text-sm text-muted-foreground">{movement.reason}</p>}
                 </div>
               ))
             )}

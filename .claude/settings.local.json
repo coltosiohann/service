@@ -5,7 +5,9 @@
       "Bash(openssl rand:*)",
       "Bash(npm run dev)",
       "Bash(curl:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx tsx:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

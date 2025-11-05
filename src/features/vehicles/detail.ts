@@ -2,17 +2,19 @@ import { listDocuments } from '@/features/documents/service';
 import { listOdometerLogs } from '@/features/odometer/service';
 import { listReminders } from '@/features/reminders/service';
 import { listServiceEvents } from '@/features/service-events/service';
+import { listVehicleTireMovements } from '@/features/tires/service';
 import { ensureVehicleAccess, toNumber } from '@/features/vehicles/service';
 import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
 
 export async function getVehicleDetail(orgId: string, vehicleId: string) {
   const vehicle = await ensureVehicleAccess(orgId, vehicleId);
 
-  const [events, logs, docs, reminders] = await Promise.all([
+  const [events, logs, docs, reminders, tireMovements] = await Promise.all([
     listServiceEvents(vehicleId, orgId),
     listOdometerLogs(vehicleId, orgId),
     listDocuments(vehicleId, orgId),
     listReminders({ orgId, vehicleId }),
+    listVehicleTireMovements(vehicleId, orgId),
   ]);
 
   const insuranceStatus = computeInsuranceStatus(vehicle.insuranceEndDate ?? null);
@@ -35,5 +37,6 @@ export async function getVehicleDetail(orgId: string, vehicleId: string) {
     odometerLogs: logs,
     documents: docs,
     reminders,
+    tireMovements,
   };
 }

@@ -22,7 +22,7 @@ import { TachographBadge } from './tachograph-badge';
 type VehicleListItem = {
   id: string;
   orgId: string;
-  type: 'CAR' | 'TRUCK';
+  type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
   make: string;
   model: string;
   year: number;
@@ -30,16 +30,21 @@ type VehicleListItem = {
   status: 'OK' | 'DUE_SOON' | 'OVERDUE';
   insuranceStatus: 'active' | 'expiring' | 'expired';
   tachographStatus: 'ok' | 'soon' | 'overdue' | 'missing' | null;
+  copieConformaStatus: 'ok' | 'soon' | 'overdue' | 'missing' | null;
   hasTonaj: boolean;
   currentOdometerKm: number;
   nextRevisionDate: Date | null;
+  insuranceStartDate: Date | null;
   insuranceEndDate: Date | null;
+  copieConformaStartDate: Date | null;
+  copieConformaExpiryDate: Date | null;
 };
 
 const typeFilters = [
   { value: 'ALL', label: 'Toate' },
   { value: 'CAR', label: 'Masini' },
   { value: 'TRUCK', label: 'Camioane' },
+  { value: 'EQUIPMENT', label: 'Utilaje' },
 ] as const;
 
 const statusFilters = [
@@ -72,7 +77,7 @@ const tachographFilters = [
 
 export function VehiclesTable() {
   const router = useRouter();
-  const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK'>('ALL');
+  const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK' | 'EQUIPMENT'>('ALL');
   const [status, setStatus] = useState<'ALL' | 'OK' | 'DUE_SOON' | 'OVERDUE'>('ALL');
   const [insurance, setInsurance] = useState<'ALL' | 'active' | 'expiring' | 'expired'>('ALL');
   const [truckTonaj, setTruckTonaj] = useState<'ALL' | 'true' | 'false'>('ALL');
@@ -271,7 +276,12 @@ export function VehiclesTable() {
                           {vehicle.make} {vehicle.model}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {vehicle.type === 'TRUCK' ? 'Camion' : 'Masina'}  -  {vehicle.year}
+                          {vehicle.type === 'TRUCK'
+                            ? 'Camion'
+                            : vehicle.type === 'EQUIPMENT'
+                              ? 'Utilaj'
+                              : 'Masina'}{' '}
+                          - {vehicle.year}
                         </span>
                       </div>
                     </TableCell>

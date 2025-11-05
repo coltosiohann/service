@@ -33,13 +33,12 @@ export const vehiclePayloadSchema = z
     lastRevisionDate: z.coerce.date().optional().nullable(),
     nextRevisionAtKm: z.coerce.number().positive().optional().nullable(),
     nextRevisionDate: z.coerce.date().optional().nullable(),
-    insuranceProvider: z.string().min(1, 'Asiguratorul este obligatoriu.'),
     insurancePolicyNumber: z.string().min(1, 'Numărul poliței este obligatoriu.'),
+    insuranceStartDate: z.coerce.date().optional().nullable(),
     insuranceEndDate: z.coerce.date().optional().nullable(),
     hasHeavyTonnageAuthorization: z.coerce.boolean().optional().nullable(),
     tachographCheckDate: z.coerce.date().optional().nullable(),
     copieConformaStartDate: z.coerce.date().optional().nullable(),
-    copieConformaExpiryDate: z.coerce.date().optional().nullable(),
     status: vehicleStatusEnum.optional(),
     tireUsageReason: z
       .string()
@@ -64,25 +63,11 @@ export const vehiclePayloadSchema = z
           path: ['tachographCheckDate'],
         });
       }
-      if (data.tiresUsage && data.tiresUsage.length > 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Consum anvelope disponibil doar pentru camioane.',
-          path: ['tiresUsage'],
-        });
-      }
       if (data.copieConformaStartDate != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Copie conformă este disponibilă doar pentru camioane.',
+          message: 'Copie conforma este disponibila doar pentru camioane.',
           path: ['copieConformaStartDate'],
-        });
-      }
-      if (data.copieConformaExpiryDate != null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Copie conformă este disponibilă doar pentru camioane.',
-          path: ['copieConformaExpiryDate'],
         });
       }
     }

@@ -197,6 +197,40 @@ export async function consumeTiresWithClient(client: DbClient, params: TireConsu
   await applyTireConsumption(client, params);
 }
 
+export async function listVehicleTireMovements(vehicleId: string, orgId: string) {
+  if (!orgId || !vehicleId) {
+    return [];
+  }
+
+  const rows = await db.query.tireStockMovements.findMany({
+    where: (fields, operators) =>
+      operators.and(
+        operators.eq(fields.vehicleId, vehicleId),
+        operators.eq(fields.orgId, orgId)
+      ),
+    orderBy: (fields, operators) => [operators.desc(fields.createdAt)],
+    with: {
+      stock: {
+        columns: {
+          size: true,
+          brand: true,
+        },
+      },
+    },
+    limit: 10,
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    stockId: row.stockId,
+    change: Number(row.change),
+    reason: row.reason,
+    createdAt: row.createdAt,
+    size: row.stock?.size ?? '',
+    brand: row.stock?.brand ?? null,
+  }));
+}
+
 export async function deleteTireStock(stockId: string, orgId: string) {
   const [deleted] = await db
     .delete(tireStocks)

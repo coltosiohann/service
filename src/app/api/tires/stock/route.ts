@@ -1,18 +1,13 @@
 
 import { createTireStock, listTireStock } from '@/features/tires/service';
 import { errorResponse, jsonResponse } from '@/lib/api';
-import { auth } from '@/lib/auth';
 import { getDefaultOrgId } from '@/lib/default-org';
 
 import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesar��.' }, { status: 401 });
-    }
+    // Authentication disabled
 
     const url = new URL(request.url);
     const orgId = url.searchParams.get('orgId') ?? (await getDefaultOrgId());
@@ -27,11 +22,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return Response.json({ message: 'Autentificare necesar��.' }, { status: 401 });
-    }
+    // Authentication disabled
 
     const body = await request.json();
     const defaultOrgId = await getDefaultOrgId();

@@ -3,7 +3,7 @@ import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { documents, vehicles } from '@/db/schema';
 
-import { computeInsuranceStatus, computeTachographStatus } from './status';
+import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from './status';
 
 import type { InsuranceStatus, TachographStatus } from './status';
 
@@ -68,7 +68,10 @@ export async function listVehicles(filters: VehicleListFilters) {
       nextRevisionDate: vehicles.nextRevisionDate,
       insuranceProvider: vehicles.insuranceProvider,
       insurancePolicyNumber: vehicles.insurancePolicyNumber,
+      insuranceStartDate: vehicles.insuranceStartDate,
       insuranceEndDate: vehicles.insuranceEndDate,
+      copieConformaStartDate: vehicles.copieConformaStartDate,
+      copieConformaExpiryDate: vehicles.copieConformaExpiryDate,
       hasHeavyTonnageAuthorization: vehicles.hasHeavyTonnageAuthorization,
       tachographCheckDate: vehicles.tachographCheckDate,
       status: vehicles.status,
@@ -84,6 +87,8 @@ export async function listVehicles(filters: VehicleListFilters) {
       const insuranceStatus = computeInsuranceStatus(row.insuranceEndDate ?? null);
       const tachographStatus =
         row.type === 'TRUCK' ? computeTachographStatus(row.tachographCheckDate ?? null) : null;
+      const copieConformaStatus =
+        row.type === 'TRUCK' ? computeCopieConformaStatus(row.copieConformaExpiryDate ?? null) : null;
 
       const hasTonaj = Boolean(row.hasHeavyTonnageAuthorization);
 
@@ -93,6 +98,7 @@ export async function listVehicles(filters: VehicleListFilters) {
         nextRevisionAtKm: toNumber(row.nextRevisionAtKm),
         insuranceStatus,
         tachographStatus,
+        copieConformaStatus,
         hasTonaj,
       };
     })
