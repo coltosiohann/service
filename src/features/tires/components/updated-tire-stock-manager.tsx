@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, RefreshCcw, Trash2, History } from 'lucide-react';
+import { History, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -38,6 +39,8 @@ type TireMovement = {
   id: string;
   type: string;
   date: string;
+  quantity: number;
+  vehicleId: string | null;
   odometerKm: number | null;
   notes: string | null;
   createdAt: string;
@@ -46,6 +49,35 @@ type TireMovement = {
   vehicleModel: string | null;
   userName: string | null;
   userEmail: string | null;
+};
+
+type TireActivityItem = {
+  id: string;
+  type: string;
+  date: string;
+  quantity: number;
+  brand: string;
+  model: string;
+  dimension: string;
+  dot: string;
+  vehicleId: string | null;
+  vehicleLicensePlate: string | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  notes: string | null;
+};
+
+const MOVEMENT_META: Record<
+  string,
+  {
+    label: string;
+    variant: 'secondary' | 'outline';
+  }
+> = {
+  MONTARE: { label: 'Montare vehicul', variant: 'outline' },
+  DEMONTARE: { label: 'Demontare vehicul', variant: 'secondary' },
+  INTRARE: { label: 'Intrare stoc', variant: 'secondary' },
+  IESIRE: { label: 'Iesire stoc', variant: 'outline' },
 };
 
 const createSchema = tireStockCreateSchema.omit({ orgId: true });
@@ -82,6 +114,15 @@ export function UpdatedTireStockManager() {
   const stock = useMemo(() => data?.stock ?? [], [data]);
   const movements = movementsData?.movements ?? [];
 
+  const {
+    data: activityData,
+    isLoading: isActivityLoading,
+    isFetching: isActivityFetching,
+    refetch: refetchActivity,
+  } = useApiQuery<{ movements: TireActivityItem[] }>('/api/tires/movements', {}, { key: ['tire-activity'] });
+
+  const recentMovements = activityData?.movements ?? [];
+
   const form = useForm<CreateFormInput, unknown, CreateFormValues>({
     resolver: zodResolver(createSchema),
     defaultValues: {
@@ -112,6 +153,7 @@ export function UpdatedTireStockManager() {
       toast.success('Anvelopă adăugată în stoc.');
       form.reset();
       await refetch();
+      await refetchActivity();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nu am putut adăuga anvelopa.');
     }
@@ -155,6 +197,7 @@ export function UpdatedTireStockManager() {
       toast.success('Stoc actualizat.');
       setAdjustmentDialogOpen(false);
       await refetch();
+      await refetchActivity();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Ajustarea stocului a eșuat.');
     } finally {
@@ -188,6 +231,7 @@ export function UpdatedTireStockManager() {
 
       toast.success('Anvelopa a fost ștearsă.');
       await refetch();
+      await refetchActivity();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nu s-a putut șterge anvelopa.');
     } finally {
@@ -355,6 +399,84 @@ export function UpdatedTireStockManager() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>Activitate recenta</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Urmareste ultimele montari si demontari legate de vehicule.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetchActivity()}
+            disabled={isActivityLoading || isActivityFetching}
+          >
+            <RefreshCcw className="mr-2 size-4" />
+            Reimprospateaza
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isActivityLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton key={index} className="h-16 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : recentMovements.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nu exista inca miscari de anvelope inregistrate.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentMovements.slice(0, 10).map((movement) => {
+                const meta = MOVEMENT_META[movement.type] ?? { label: movement.type, variant: 'outline' as const };
+                return (
+                  <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-semibold">
+                          {movement.quantity} x {movement.brand} {movement.model}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {movement.dimension} · DOT: {movement.dot}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={meta.variant}>{meta.label}</Badge>
+                        <p className="mt-1 text-xs text-muted-foreground">{formatDate(movement.date)}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {movement.vehicleLicensePlate ? (
+                        <>
+                          Vehicul:{' '}
+                          {movement.vehicleId ? (
+                            <Link
+                              href={`/vehicule/${movement.vehicleId}`}
+                              className="font-medium text-primary underline-offset-2 hover:underline"
+                            >
+                              {movement.vehicleLicensePlate}
+                            </Link>
+                          ) : (
+                            <span className="font-medium">{movement.vehicleLicensePlate}</span>
+                          )}{' '}
+                          {movement.vehicleMake} {movement.vehicleModel}
+                        </>
+                      ) : (
+                        'Operatiune direct in stoc'
+                      )}
+                    </div>
+                    {movement.notes && <p className="mt-2 text-sm">{movement.notes}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Dialog open={adjustmentDialogOpen} onOpenChange={setAdjustmentDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -424,34 +546,49 @@ export function UpdatedTireStockManager() {
                 <p className="text-sm text-muted-foreground">Nu există mișcări înregistrate.</p>
               ) : (
                 <div className="space-y-2">
-                  {movements.map((movement) => (
-                    <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <Badge variant={movement.type === 'INTRARE' || movement.type === 'DEMONTARE' ? 'secondary' : 'outline'}>
-                          {movement.type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{formatDate(movement.date)}</span>
+                  {movements.map((movement) => {
+                    const meta = MOVEMENT_META[movement.type] ?? { label: movement.type, variant: 'outline' as const };
+                    return (
+                      <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <Badge variant={meta.variant}>{meta.label}</Badge>
+                          <span className="text-xs text-muted-foreground">{formatDate(movement.date)}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Cantitate: {movement.quantity}
+                        </p>
+                        {movement.vehicleLicensePlate && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Vehicul:{' '}
+                            {movement.vehicleId ? (
+                              <Link
+                                href={`/vehicule/${movement.vehicleId}`}
+                                className="font-medium text-primary underline-offset-2 hover:underline"
+                              >
+                                {movement.vehicleLicensePlate}
+                              </Link>
+                            ) : (
+                              <span className="font-medium">{movement.vehicleLicensePlate}</span>
+                            )}{' '}
+                            {movement.vehicleMake} {movement.vehicleModel}
+                          </p>
+                        )}
+                        {movement.odometerKm && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Kilometraj: {movement.odometerKm.toLocaleString('ro-RO')} km
+                          </p>
+                        )}
+                        {movement.notes && (
+                          <p className="mt-1 text-sm">{movement.notes}</p>
+                        )}
+                        {movement.userName && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Utilizator: {movement.userName}
+                          </p>
+                        )}
                       </div>
-                      {movement.vehicleLicensePlate && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Vehicul: {movement.vehicleLicensePlate} {movement.vehicleMake} {movement.vehicleModel}
-                        </p>
-                      )}
-                      {movement.odometerKm && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Kilometraj: {movement.odometerKm.toLocaleString('ro-RO')} km
-                        </p>
-                      )}
-                      {movement.notes && (
-                        <p className="mt-1 text-sm">{movement.notes}</p>
-                      )}
-                      {movement.userName && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Utilizator: {movement.userName}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

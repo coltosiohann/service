@@ -249,6 +249,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                         {movement.type}
                       </Badge>
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Cantitate: {movement.quantity}</p>
                     {movement.notes && <p className="mt-2 text-sm text-muted-foreground">{movement.notes}</p>}
                   </div>
                 ))

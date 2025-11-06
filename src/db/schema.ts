@@ -434,6 +434,7 @@ export const tireStockMovements = pgTable(
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
     type: tireMovementTypeEnum('type').notNull(),
     date: date('date').notNull(),
+    quantity: integer('quantity').notNull().default(0),
     odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
     notes: text('notes'),
     userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),

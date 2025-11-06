@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 const tireChangeSchema = z.object({
   operation: z.enum(['MONTARE', 'DEMONTARE']),
   stockId: z.string().uuid('Selectați o anvelopă.'),
+  quantity: z.number().int().positive('Cantitatea trebuie să fie cel puțin 1.'),
   date: z.date(),
   odometerKm: z.number().nonnegative().optional(),
   notes: z.string().max(500).optional(),
@@ -98,6 +99,7 @@ export function TireChangeForm({
     defaultValues: {
       operation: 'MONTARE',
       stockId: '',
+      quantity: 1,
       date: new Date(),
       odometerKm: 0,
       notes: '',
@@ -114,6 +116,15 @@ export function TireChangeForm({
   }, [open, refetchStock, refetchMounted]);
 
   const handleSubmit = form.handleSubmit(async (values) => {
+    // Validate quantity for MONTARE operation
+    if (values.operation === 'MONTARE') {
+      const selectedStock = stock.find((item) => item.id === values.stockId);
+      if (selectedStock && values.quantity > selectedStock.quantity) {
+        toast.error(`Stoc insuficient. Disponibil: ${selectedStock.quantity} anvelope.`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -129,6 +140,7 @@ export function TireChangeForm({
         },
         body: JSON.stringify({
           stockId: values.stockId,
+          quantity: values.quantity,
           date: values.date,
           odometerKm: values.odometerKm,
           notes: values.notes,
@@ -222,6 +234,19 @@ export function TireChangeForm({
             </Select>
             {form.formState.errors.stockId && (
               <p className="text-xs text-destructive">{form.formState.errors.stockId.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quantity">Cantitate *</Label>
+            <Input
+              id="quantity"
+              type="number"
+              min={1}
+              {...form.register('quantity', { valueAsNumber: true })}
+            />
+            {form.formState.errors.quantity && (
+              <p className="text-xs text-destructive">{form.formState.errors.quantity.message}</p>
             )}
           </div>
 

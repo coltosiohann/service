@@ -177,6 +177,7 @@ async function changeStockQuantity(
     vehicleId: vehicleId ?? null,
     type,
     date: toISODateString(date) ?? new Date().toISOString().slice(0, 10),
+    quantity,
     odometerKm: odometerKm != null ? odometerKm.toString() : null,
     notes: normalizeText(notes),
     userId: userId ?? null,
@@ -225,7 +226,7 @@ export async function mountTires(payload: TireMountInput, userId?: string) {
       orgId: data.orgId,
       stockId: data.stockId,
       type: 'MONTARE',
-      quantity: 1,
+      quantity: data.quantity,
       vehicleId: data.vehicleId,
       date: data.date,
       odometerKm: data.odometerKm,
@@ -249,7 +250,7 @@ export async function unmountTires(payload: TireUnmountInput, userId?: string) {
       orgId: data.orgId,
       stockId: data.stockId,
       type: 'DEMONTARE',
-      quantity: 1,
+      quantity: data.quantity,
       vehicleId: data.vehicleId,
       date: data.date,
       odometerKm: data.odometerKm,
@@ -289,6 +290,7 @@ export async function listVehicleTireMovements(vehicleId: string, orgId: string,
     stockId: row.stockId,
     type: row.type,
     date: row.date,
+    quantity: row.quantity ?? 0,
     odometerKm: row.odometerKm ? Number(row.odometerKm) : null,
     notes: row.notes,
     createdAt: row.createdAt,
@@ -330,6 +332,8 @@ export async function listStockMovements(stockId: string, orgId: string) {
     id: row.id,
     type: row.type,
     date: row.date,
+    quantity: row.quantity ?? 0,
+    vehicleId: row.vehicleId ?? null,
     odometerKm: row.odometerKm ? Number(row.odometerKm) : null,
     notes: row.notes,
     createdAt: row.createdAt,
@@ -338,6 +342,51 @@ export async function listStockMovements(stockId: string, orgId: string) {
     vehicleModel: row.vehicle?.model ?? null,
     userName: row.user?.name ?? null,
     userEmail: row.user?.email ?? null,
+  }));
+}
+
+export async function listRecentTireMovements(orgId: string, limit = 50) {
+  if (!orgId) {
+    return [];
+  }
+
+  const rows = await db.query.tireStockMovements.findMany({
+    where: (fields, operators) => operators.eq(fields.orgId, orgId),
+    orderBy: (fields, operators) => [operators.desc(fields.date), operators.desc(fields.createdAt)],
+    with: {
+      stock: {
+        columns: {
+          brand: true,
+          model: true,
+          dimension: true,
+          dot: true,
+        },
+      },
+      vehicle: {
+        columns: {
+          licensePlate: true,
+          make: true,
+          model: true,
+        },
+      },
+    },
+    limit,
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    type: row.type,
+    date: row.date,
+    quantity: row.quantity ?? 0,
+    brand: row.stock?.brand ?? '',
+    model: row.stock?.model ?? '',
+    dimension: row.stock?.dimension ?? '',
+    dot: row.stock?.dot ?? '',
+    vehicleId: row.vehicleId ?? null,
+    vehicleLicensePlate: row.vehicle?.licensePlate ?? null,
+    vehicleMake: row.vehicle?.make ?? null,
+    vehicleModel: row.vehicle?.model ?? null,
+    notes: row.notes,
   }));
 }
 
@@ -372,6 +421,7 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
       stockId: tireStockMovements.stockId,
       type: tireStockMovements.type,
       date: tireStockMovements.date,
+      quantity: tireStockMovements.quantity,
       odometerKm: tireStockMovements.odometerKm,
       brand: tireStocks.brand,
       model: tireStocks.model,
@@ -398,6 +448,7 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
       dot: string;
       mountDate: string;
       mountOdometerKm: number | null;
+      quantity: number;
     }
   >();
 
@@ -412,6 +463,7 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
           dot: movement.dot,
           mountDate: movement.date,
           mountOdometerKm: movement.odometerKm ? Number(movement.odometerKm) : null,
+          quantity: movement.quantity ?? 0,
         });
       }
     } else if (movement.type === 'DEMONTARE') {

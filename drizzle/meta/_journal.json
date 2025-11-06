@@ -8,6 +8,13 @@
       "when": 1762460003829,
       "tag": "0000_keen_silk_fever",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762469062647,
+      "tag": "0004_add_tire_movement_quantity",
+      "breakpoints": true
     }
   ]
 }

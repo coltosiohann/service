@@ -1,0 +1,1 @@
+ALTER TABLE "tire_stock_movements" ADD COLUMN "quantity" integer DEFAULT 0 NOT NULL;
