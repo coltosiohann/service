@@ -237,9 +237,9 @@ async function main() {
   ];
 
   const tireStocksData: InferModel<typeof tireStocks, "insert">[] = [
-    { id: crypto.randomUUID(), orgId, size: "315/70 R22.5", brand: "Michelin", notes: "Axa fata", quantity: 12, minQuantity: 4 },
-    { id: crypto.randomUUID(), orgId, size: "385/65 R22.5", brand: "Continental", notes: "Semi remorci", quantity: 8, minQuantity: 4 },
-    { id: crypto.randomUUID(), orgId, size: "295/80 R22.5", brand: "Goodyear", notes: "Camioane mici", quantity: 6, minQuantity: 2 },
+    { id: crypto.randomUUID(), orgId, brand: "Michelin", model: "X Multi Z", dimension: "315/70 R22.5", dot: "2024", location: "Depozit A", quantity: 12 },
+    { id: crypto.randomUUID(), orgId, brand: "Continental", model: "HDR2", dimension: "385/65 R22.5", dot: "2023", location: "Depozit A", quantity: 8 },
+    { id: crypto.randomUUID(), orgId, brand: "Goodyear", model: "KMAX S", dimension: "295/80 R22.5", dot: "2024", location: "Depozit B", quantity: 6 },
   ];
 
   const notificationsData: InferModel<typeof notifications, "insert">[] = [

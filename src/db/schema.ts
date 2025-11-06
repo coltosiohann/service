@@ -383,6 +383,13 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   }),
 }));
 
+export const tireMovementTypeEnum = pgEnum('tire_movement_type', [
+  'INTRARE',
+  'IESIRE',
+  'MONTARE',
+  'DEMONTARE',
+]);
+
 export const tireStocks = pgTable(
   'tire_stocks',
   {
@@ -390,18 +397,25 @@ export const tireStocks = pgTable(
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
-    size: text('size').notNull(),
-    brand: text('brand'),
-    notes: text('notes'),
+    brand: text('brand').notNull(),
+    model: text('model').notNull(),
+    dimension: text('dimension').notNull(),
+    dot: text('dot').notNull(),
     quantity: integer('quantity').notNull().default(0),
-    minQuantity: integer('min_quantity'),
+    location: text('location'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    orgSizeUnique: uniqueIndex('tire_stocks_org_id_size_unique').on(table.orgId, table.size),
+    orgBrandModelDimensionDotIdx: index('tire_stocks_org_brand_model_dimension_dot_idx').on(
+      table.orgId,
+      table.brand,
+      table.model,
+      table.dimension,
+      table.dot,
+    ),
     orgIdx: index('tire_stocks_org_id_idx').on(table.orgId),
     quantityCheck: check('tire_stocks_quantity_non_negative', sql`${table.quantity} >= 0`),
   }),
@@ -413,19 +427,24 @@ export const tireStockMovements = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     stockId: uuid('stock_id')
       .notNull()
-      .references(() => tireStocks.id, { onDelete: 'cascade' }),
+      .references(() => tireStocks.id, { onDelete: 'restrict' }),
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
     vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
-    change: integer('change').notNull(),
-    reason: text('reason'),
+    type: tireMovementTypeEnum('type').notNull(),
+    date: date('date').notNull(),
+    odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
+    notes: text('notes'),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
     stockIdx: index('tire_stock_movements_stock_id_idx').on(table.stockId),
     orgIdx: index('tire_stock_movements_org_id_idx').on(table.orgId),
     vehicleIdx: index('tire_stock_movements_vehicle_id_idx').on(table.vehicleId),
+    vehicleDateIdx: index('tire_stock_movements_vehicle_date_idx').on(table.vehicleId, table.date),
+    stockDateIdx: index('tire_stock_movements_stock_date_idx').on(table.stockId, table.date),
   }),
 );
 
@@ -450,8 +469,13 @@ export const tireStockMovementsRelations = relations(tireStockMovements, ({ one 
     fields: [tireStockMovements.vehicleId],
     references: [vehicles.id],
   }),
+  user: one(users, {
+    fields: [tireStockMovements.userId],
+    references: [users.id],
+  }),
 }));
 
 export type VehicleStatus = (typeof vehicleStatusEnum.enumValues)[number];
 export type VehicleType = (typeof vehicleTypeEnum.enumValues)[number];
 export type MembershipRole = (typeof membershipRoleEnum.enumValues)[number];
+export type TireMovementType = (typeof tireMovementTypeEnum.enumValues)[number];

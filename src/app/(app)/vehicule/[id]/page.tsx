@@ -9,6 +9,7 @@ import { CopieConformaBadge } from '@/features/vehicles/components/copie-conform
 import { InsuranceBadge } from '@/features/vehicles/components/insurance-badge';
 import { StatusPill } from '@/features/vehicles/components/status-pill';
 import { TachographBadge } from '@/features/vehicles/components/tachograph-badge';
+import { VehicleDetailActions } from '@/features/vehicles/components/vehicle-detail-actions';
 import { getVehicleDetail } from '@/features/vehicles/detail';
 import { getDefaultOrg } from '@/lib/default-org';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -27,7 +28,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const { vehicle, serviceEvents, odometerLogs, documents, reminders, tireMovements } = detail;
+  const { vehicle, serviceEvents, odometerLogs, documents, reminders, tireMovements, mountedTires } = detail;
 
   return (
     <div className="space-y-6">
@@ -36,12 +37,15 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           <h1 className="text-3xl font-bold">Detalii vehicul</h1>
           <p className="text-muted-foreground">Informatii complete despre vehicul</p>
         </div>
-        <Link href={`/vehicule/${params.id}/editare`}>
-          <Button>
-            <Pencil className="mr-2 size-4" />
-            Editeaza
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <VehicleDetailActions vehicleId={params.id} />
+          <Link href={`/vehicule/${params.id}/editare`}>
+            <Button variant="secondary">
+              <Pencil className="mr-2 size-4" />
+              Editeaza
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 rounded-3xl border border-border bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
@@ -202,28 +206,54 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         <Card>
           <CardHeader>
             <CardTitle>Anvelope</CardTitle>
-            <CardDescription>Istoric anvelope consumate.</CardDescription>
+            <CardDescription>Anvelope montate si istoric schimbari.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {tireMovements.length === 0 ? (
-              <EmptyState message="Nu exista miscari de anvelope." />
-            ) : (
-              tireMovements.map((movement) => (
-                <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{movement.size}</span>
-                    <span className="text-muted-foreground">{formatDate(movement.createdAt)}</span>
+          <CardContent className="space-y-4">
+            {mountedTires.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Anvelope montate actualmente</h4>
+                {mountedTires.map((tire) => (
+                  <div key={tire.stockId} className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{tire.brand} {tire.model}</span>
+                      <Badge variant="secondary">Montat</Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {tire.dimension} • DOT: {tire.dot}
+                    </div>
+                    {tire.mountDate && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Montat la: {formatDate(tire.mountDate)}
+                        {tire.mountOdometerKm && ` • ${tire.mountOdometerKm.toLocaleString('ro-RO')} km`}
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{movement.brand ?? '-'}</span>
-                    <Badge variant={movement.change < 0 ? 'danger' : 'secondary'}>
-                      {movement.change > 0 ? '+' : ''}{movement.change}
-                    </Badge>
-                  </div>
-                  {movement.reason && <p className="mt-2 text-sm text-muted-foreground">{movement.reason}</p>}
-                </div>
-              ))
+                ))}
+              </div>
             )}
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Istoric miscarile de anvelope</h4>
+              {tireMovements.length === 0 ? (
+                <EmptyState message="Nu exista miscari de anvelope." />
+              ) : (
+                tireMovements.slice(0, 5).map((movement) => (
+                  <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{movement.brand} {movement.model}</span>
+                      <span className="text-muted-foreground">{formatDate(movement.date)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{movement.dimension} • DOT: {movement.dot}</span>
+                      <Badge variant={movement.type === 'MONTARE' || movement.type === 'INTRARE' ? 'secondary' : 'outline'}>
+                        {movement.type}
+                      </Badge>
+                    </div>
+                    {movement.notes && <p className="mt-2 text-sm text-muted-foreground">{movement.notes}</p>}
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </section>

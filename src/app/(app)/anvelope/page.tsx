@@ -1,4 +1,4 @@
-import { TireStockManager } from '@/features/tires/components/tire-stock-manager';
+import { UpdatedTireStockManager } from '@/features/tires/components/updated-tire-stock-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,10 +9,10 @@ export default function TireStockPage() {
       <div>
         <h1 className="text-3xl font-bold">Stoc anvelope</h1>
         <p className="text-muted-foreground">
-          Administrează anvelopele disponibile pentru camioane și urmărește consumul.
+          Administrează anvelopele disponibile și urmărește consumul.
         </p>
       </div>
-      <TireStockManager />
+      <UpdatedTireStockManager />
     </div>
   );
 }

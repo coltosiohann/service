@@ -2,55 +2,58 @@ import { z } from 'zod';
 
 export const tireStockCreateSchema = z.object({
   orgId: z.string().uuid(),
-  size: z.string().min(3, 'Dimensiunea este obligatorie.').max(100),
-  brand: z
-    .string()
-    .max(60, 'Marca poate avea cel mult 60 de caractere.')
-    .optional()
-    .nullable(),
-  notes: z
-    .string()
-    .max(200, 'NotiEle pot avea cel mult 200 de caractere.')
-    .optional()
-    .nullable(),
+  brand: z.string().min(1, 'Marca este obligatorie.').max(100),
+  model: z.string().min(1, 'Modelul este obligatoriu.').max(100),
+  dimension: z.string().min(3, 'Dimensiunea este obligatorie.').max(50),
+  dot: z.string().min(4, 'DOT este obligatoriu.').max(20),
   quantity: z.coerce.number().int().min(0, 'Cantitatea trebuie sa fie pozitiva.').default(0),
-  minQuantity: z
-    .coerce.number()
-    .int()
-    .min(0, 'Stocul minim trebuie sa fie pozitiv.')
+  location: z
+    .string()
+    .max(100, 'Locatia poate avea cel mult 100 de caractere.')
     .optional()
     .nullable(),
+});
+
+export const tireMovementCreateSchema = z.object({
+  orgId: z.string().uuid(),
+  stockId: z.string().uuid(),
+  vehicleId: z.string().uuid().optional().nullable(),
+  type: z.enum(['INTRARE', 'IESIRE', 'MONTARE', 'DEMONTARE']),
+  date: z.coerce.date(),
+  odometerKm: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().max(500, 'Observatiile pot avea cel mult 500 de caractere.').optional().nullable(),
+  userId: z.string().uuid().optional().nullable(),
+});
+
+export const tireMountSchema = z.object({
+  orgId: z.string().uuid(),
+  vehicleId: z.string().uuid(),
+  stockId: z.string().uuid(),
+  date: z.coerce.date(),
+  odometerKm: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
+export const tireUnmountSchema = z.object({
+  orgId: z.string().uuid(),
+  vehicleId: z.string().uuid(),
+  stockId: z.string().uuid(),
+  date: z.coerce.date(),
+  odometerKm: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
 export const tireStockAdjustSchema = z.object({
   orgId: z.string().uuid(),
   stockId: z.string().uuid(),
-  change: z.coerce.number().int(),
-  reason: z.string().max(200, 'Motivul poate avea cel mult 200 de caractere.').optional().nullable(),
-  vehicleId: z.string().uuid().optional().nullable(),
+  type: z.enum(['INTRARE', 'IESIRE']),
+  quantity: z.coerce.number().int().positive('Cantitatea trebuie sa fie pozitiva.'),
+  date: z.coerce.date(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
-export const tireConsumptionSchema = z.object({
-  orgId: z.string().uuid(),
-  vehicleId: z.string().uuid(),
-  reason: z
-    .string()
-    .max(200, 'Motivul poate avea cel mult 200 de caractere.')
-    .optional()
-    .nullable(),
-  items: z
-    .array(
-      z.object({
-        stockId: z.string().uuid(),
-        quantity: z.coerce.number().int().positive('Cantitatea trebuie sa fie pozitiva.'),
-        reason: z
-          .string()
-          .max(200, 'Motivul poate avea cel mult 200 de caractere.')
-          .optional()
-          .nullable(),
-      }),
-    )
-    .min(1, 'Selectati cel putin un tip de anvelopa.'),
-});
-
-export type TireConsumptionInput = z.infer<typeof tireConsumptionSchema>;
+export type TireStockCreate = z.infer<typeof tireStockCreateSchema>;
+export type TireMovementCreate = z.infer<typeof tireMovementCreateSchema>;
+export type TireMountInput = z.infer<typeof tireMountSchema>;
+export type TireUnmountInput = z.infer<typeof tireUnmountSchema>;
+export type TireStockAdjust = z.infer<typeof tireStockAdjustSchema>;

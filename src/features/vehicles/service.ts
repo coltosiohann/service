@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
 import { db, vehicles } from '@/db';
-import { consumeTiresWithClient } from '@/features/tires/service';
+// import { consumeTiresWithClient } from '@/features/tires/service'; // Deprecated
 import { NotFoundError, ValidationError } from '@/lib/errors';
 
 import { computeVehicleStatus } from './status';
@@ -105,7 +105,7 @@ export async function createVehicle(payload: unknown) {
     throw new ValidationError('Date vehicul invalide.', data.error.flatten());
   }
 
-  const { tiresUsage = [], tireUsageReason, ...vehicle } = data.data;
+  const { tiresUsage = [], ...vehicle } = data.data;
   const sanitizedUsage = sanitizeTireUsage(vehicle.type, tiresUsage);
 
   const computedStatus: VehicleStatus =
@@ -152,12 +152,13 @@ export async function createVehicle(payload: unknown) {
       .returning();
 
     if (created && sanitizedUsage.length > 0) {
-      await consumeTiresWithClient(tx, {
-        orgId: created.orgId,
-        vehicleId: created.id,
-        reason: tireUsageReason ?? null,
-        items: sanitizedUsage,
-      });
+      // Tire consumption is now handled separately via /api/vehicles/[id]/tires/mount endpoint
+      // await consumeTiresWithClient(tx, {
+      //   orgId: created.orgId,
+      //   vehicleId: created.id,
+      //   reason: tireUsageReason ?? null,
+      //   items: sanitizedUsage,
+      // });
     }
 
     return created;
@@ -173,7 +174,7 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
     throw new ValidationError('Date vehicul invalide.', parsed.error.flatten());
   }
 
-  const { tiresUsage, tireUsageReason, ...updateData } = parsed.data;
+  const { tiresUsage, ...updateData } = parsed.data;
 
   const record = await db.transaction(async (tx) => {
     const existing = await tx.query.vehicles.findFirst({
@@ -271,12 +272,13 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
     const usage = sanitizeTireUsage(updateData.type ?? existing.type, tiresUsage);
 
     if (updated && usage.length > 0) {
-      await consumeTiresWithClient(tx, {
-        orgId: existing.orgId,
-        vehicleId,
-        reason: tireUsageReason ?? null,
-        items: usage,
-      });
+      // Tire consumption is now handled separately via /api/vehicles/[id]/tires/mount endpoint
+      // await consumeTiresWithClient(tx, {
+      //   orgId: existing.orgId,
+      //   vehicleId,
+      //   reason: tireUsageReason ?? null,
+      //   items: usage,
+      // });
     }
 
     return updated;
