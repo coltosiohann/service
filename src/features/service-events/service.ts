@@ -22,6 +22,16 @@ function toISODateString(value: Date | string | null | undefined): string | null
   return value;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeUserId(userId: string | undefined): string | null {
+  if (!userId) {
+    return null;
+  }
+
+  return UUID_REGEX.test(userId) ? userId : null;
+}
+
 function buildVehicleUpdates(params: {
   vehicle: typeof vehicles.$inferSelect;
   payload: {
@@ -79,6 +89,8 @@ export async function createServiceEvent(payload: unknown, userId: string) {
 
   const nextDueDate = toISODateString(data.nextDueDate ?? null);
 
+  const createdBy = normalizeUserId(userId);
+
   const [event] = await db
     .insert(serviceEvents)
     .values({
@@ -89,9 +101,7 @@ export async function createServiceEvent(payload: unknown, userId: string) {
       nextDueKm: data.nextDueKm != null ? data.nextDueKm.toString() : null,
       nextDueDate,
       notes: data.notes ?? null,
-      costCurrency: data.costCurrency,
-      costAmount: data.costAmount != null ? data.costAmount.toString() : null,
-      createdBy: userId,
+      createdBy,
     })
     .returning();
 
@@ -161,11 +171,6 @@ export async function updateServiceEvent(eventId: string, payload: unknown) {
         ? toISODateString(data.nextDueDate) ?? null
         : existing.nextDueDate ?? null,
     notes: data.notes ?? existing.notes ?? null,
-    costCurrency: data.costCurrency ?? existing.costCurrency ?? 'RON',
-    costAmount:
-      data.costAmount != null
-        ? data.costAmount.toString()
-        : existing.costAmount ?? null,
   };
 
   const [event] = await db

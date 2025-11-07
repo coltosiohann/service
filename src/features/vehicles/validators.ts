@@ -1,7 +1,44 @@
 import { z } from 'zod';
 
-const vehicleTypeEnum = z.enum(['CAR', 'TRUCK', 'EQUIPMENT']);
+const vehicleTypeEnum = z.enum(['CAR', 'TRUCK', 'EQUIPMENT', 'TRAILER']);
 const vehicleStatusEnum = z.enum(['OK', 'DUE_SOON', 'OVERDUE']);
+
+const optionalTrimmedString = (max: number, message: string) =>
+  z
+    .string()
+    .max(max, message)
+    .optional()
+    .transform((value) => {
+      if (value == null) {
+        return undefined;
+      }
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : undefined;
+    });
+
+const optionalNumber = <T extends z.ZodNumber>(schema: T) =>
+  z.preprocess((value) => {
+    if (value === '' || value === null || typeof value === 'undefined') {
+      return undefined;
+    }
+
+    if (typeof value === 'number') {
+      return Number.isNaN(value) ? undefined : value;
+    }
+
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, schema.optional());
+
+const optionalDate = () =>
+  z
+    .preprocess((value) => {
+      if (value === '' || value === null || typeof value === 'undefined') {
+        return undefined;
+      }
+      return value;
+    }, z.coerce.date().optional())
+    .nullable();
 
 const tireUsageEntrySchema = z.object({
   stockId: z.string().uuid(),
@@ -17,28 +54,22 @@ export const vehiclePayloadSchema = z
   .object({
     orgId: z.string().uuid(),
     type: vehicleTypeEnum,
-    make: z.string().min(1, 'Marca este obligatorie.'),
-    model: z.string().min(1, 'Modelul este obligatoriu.'),
-    year: z.coerce.number().int().min(1980).max(new Date().getFullYear() + 1),
-    vin: z
-      .string()
-      .min(11)
-      .max(17)
-      .regex(/^[A-HJ-NPR-Z0-9]+$/i, 'VIN invalid.')
-      .optional()
-      .nullable(),
-    licensePlate: z.string().min(3, 'Numărul de înmatriculare este obligatoriu.'),
-    currentOdometerKm: z.coerce.number().nonnegative(),
-    lastOilChangeDate: z.coerce.date().optional().nullable(),
-    lastRevisionDate: z.coerce.date().optional().nullable(),
-    nextRevisionAtKm: z.coerce.number().positive().optional().nullable(),
-    nextRevisionDate: z.coerce.date().optional().nullable(),
-    insurancePolicyNumber: z.string().min(1, 'Numărul poliței este obligatoriu.'),
-    insuranceStartDate: z.coerce.date().optional().nullable(),
-    insuranceEndDate: z.coerce.date().optional().nullable(),
+    make: optionalTrimmedString(100, 'Marca poate avea cel mult 100 de caractere.'),
+    model: optionalTrimmedString(100, 'Modelul poate avea cel mult 100 de caractere.'),
+    year: optionalNumber(z.number().int()),
+    vin: optionalTrimmedString(17, 'VIN poate avea cel mult 17 caractere.'),
+    licensePlate: optionalTrimmedString(50, 'Numarul de inmatriculare poate avea cel mult 50 de caractere.'),
+    currentOdometerKm: optionalNumber(z.number().nonnegative()),
+    lastOilChangeDate: optionalDate(),
+    lastRevisionDate: optionalDate(),
+    nextRevisionAtKm: optionalNumber(z.number().positive()),
+    nextRevisionDate: optionalDate(),
+    insurancePolicyNumber: optionalTrimmedString(120, 'Numarul politei poate avea cel mult 120 de caractere.'),
+    insuranceStartDate: optionalDate(),
+    insuranceEndDate: optionalDate(),
     hasHeavyTonnageAuthorization: z.coerce.boolean().optional().nullable(),
-    tachographCheckDate: z.coerce.date().optional().nullable(),
-    copieConformaStartDate: z.coerce.date().optional().nullable(),
+    tachographCheckDate: optionalDate(),
+    copieConformaStartDate: optionalDate(),
     status: vehicleStatusEnum.optional(),
     tireUsageReason: z
       .string()
@@ -52,14 +83,14 @@ export const vehiclePayloadSchema = z
       if (data.hasHeavyTonnageAuthorization != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Autorizația de tonaj este permisă doar pentru camioane.',
+          message: 'Autorizatia de tonaj este permisa doar pentru camioane.',
           path: ['hasHeavyTonnageAuthorization'],
         });
       }
       if (data.tachographCheckDate != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Data tahograf este disponibilă doar pentru camioane.',
+          message: 'Data tahograf este disponibila doar pentru camioane.',
           path: ['tachographCheckDate'],
         });
       }

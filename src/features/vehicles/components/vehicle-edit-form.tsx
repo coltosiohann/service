@@ -15,22 +15,58 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApiMutation, useApiQuery } from '@/hooks/use-api';
 
-const vehicleSchema = z.object({
-  type: z.enum(['CAR', 'TRUCK', 'EQUIPMENT']),
-  make: z.string().min(1, 'Marca este obligatorie.'),
-  model: z.string().min(1, 'Modelul este obligatoriu.'),
-  year: z.coerce.number().int().min(1980, 'An invalid.').max(new Date().getFullYear() + 1),
-  vin: z
+const optionalTextField = () =>
+  z
     .string()
-    .min(11, 'VIN trebuie sa contina minim 11 caractere.')
-    .max(17, 'VIN trebuie sa contina maxim 17 caractere.')
     .optional()
-    .or(z.literal('')),
-  licensePlate: z.string().min(3, 'Numarul de inmatriculare este obligatoriu.'),
-  currentOdometerKm: z.coerce.number().nonnegative('Kilometrajul trebuie sa fie pozitiv.'),
+    .transform((value) => {
+      if (value == null) {
+        return undefined;
+      }
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : undefined;
+    });
+
+const optionalNumberField = () =>
+  z.preprocess((value) => {
+    if (value === '' || value === null || typeof value === 'undefined') {
+      return undefined;
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, z.number().optional());
+
+const optionalIntField = () =>
+  z.preprocess((value) => {
+    if (value === '' || value === null || typeof value === 'undefined') {
+      return undefined;
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, z.number().int().optional());
+
+const sanitizeText = (value?: string | null) =>
+  value && value.trim().length ? value.trim() : undefined;
+
+const sanitizeUpperText = (value?: string | null) => {
+  const sanitized = sanitizeText(value);
+  return sanitized ? sanitized.toUpperCase() : undefined;
+};
+
+const sanitizeNumber = (value?: number | null) =>
+  typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
+
+const vehicleSchema = z.object({
+  type: z.enum(['CAR', 'TRUCK', 'EQUIPMENT', 'TRAILER']),
+  make: optionalTextField(),
+  model: optionalTextField(),
+  year: optionalIntField(),
+  vin: optionalTextField(),
+  licensePlate: optionalTextField(),
+  currentOdometerKm: optionalNumberField(),
   nextRevisionDate: z.string().optional(),
-  nextRevisionAtKm: z.string().optional(),
-  insurancePolicyNumber: z.string().min(1, 'Numarul politei este obligatoriu.'),
+  nextRevisionAtKm: optionalNumberField(),
+  insurancePolicyNumber: optionalTextField(),
   insuranceStartDate: z.string().optional(),
   insuranceEndDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
@@ -58,16 +94,16 @@ type VehicleFormValues = z.infer<typeof vehicleSchema>;
 type VehicleFormInput = z.input<typeof vehicleSchema>;
 
 type VehicleUpdatePayload = {
-  type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
-  make: string;
-  model: string;
-  year: number;
+  type: 'CAR' | 'TRUCK' | 'EQUIPMENT' | 'TRAILER';
+  make?: string;
+  model?: string;
+  year?: number;
   vin?: string;
-  licensePlate: string;
-  currentOdometerKm: number;
+  licensePlate?: string;
+  currentOdometerKm?: number;
   nextRevisionDate: Date | null;
-  nextRevisionAtKm: number | null;
-  insurancePolicyNumber: string;
+  nextRevisionAtKm?: number;
+  insurancePolicyNumber?: string;
   insuranceStartDate: Date | null;
   insuranceEndDate: Date | null;
   hasHeavyTonnageAuthorization?: boolean;
@@ -80,7 +116,7 @@ type VehicleUpdatePayload = {
 type VehicleEditFormProps = {
   vehicle: {
     id: string;
-    type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
+    type: 'CAR' | 'TRUCK' | 'EQUIPMENT' | 'TRAILER';
     make: string;
     model: string;
     year: number;
@@ -171,15 +207,15 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   const onSubmit = async (values: VehicleFormValues) => {
     const payload: VehicleUpdatePayload = {
       type: values.type,
-      make: values.make,
-      model: values.model,
-      year: values.year,
-      vin: values.vin ? values.vin.toUpperCase() : undefined,
-      licensePlate: values.licensePlate.toUpperCase(),
-      currentOdometerKm: values.currentOdometerKm,
+      make: sanitizeText(values.make),
+      model: sanitizeText(values.model),
+      year: sanitizeNumber(values.year),
+      vin: sanitizeUpperText(values.vin),
+      licensePlate: sanitizeUpperText(values.licensePlate),
+      currentOdometerKm: sanitizeNumber(values.currentOdometerKm),
       nextRevisionDate: values.nextRevisionDate ? new Date(values.nextRevisionDate) : null,
-      nextRevisionAtKm: values.nextRevisionAtKm ? Number(values.nextRevisionAtKm) : null,
-      insurancePolicyNumber: values.insurancePolicyNumber,
+      nextRevisionAtKm: sanitizeNumber(values.nextRevisionAtKm),
+      insurancePolicyNumber: sanitizeText(values.insurancePolicyNumber),
       insuranceStartDate: values.insuranceStartDate ? new Date(values.insuranceStartDate) : null,
       insuranceEndDate: values.insuranceEndDate ? new Date(values.insuranceEndDate) : null,
       hasHeavyTonnageAuthorization:
@@ -240,6 +276,7 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
               >
                 <option value="CAR">Masina</option>
                 <option value="TRUCK">Camion</option>
+                <option value="TRAILER">Remorca</option>
                 <option value="EQUIPMENT">Utilaje</option>
               </select>
             </div>

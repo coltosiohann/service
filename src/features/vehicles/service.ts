@@ -58,6 +58,25 @@ function computeCopieConformaExpiry(
   expiry.setFullYear(expiry.getFullYear() + 1);
   return expiry.toISOString().slice(0, 10);
 }
+
+function fallbackText(value: string | null | undefined, fallback = 'N/A') {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+
+  return fallback;
+}
+
+function fallbackUpperText(value: string | null | undefined, fallback = 'N/A') {
+  return fallbackText(value, fallback).toUpperCase();
+}
+
+function fallbackNumber(value: number | null | undefined, fallback: number) {
+  return typeof value === 'number' && !Number.isNaN(value) ? value : fallback;
+}
 type TireUsageItem = {
   stockId: string;
   quantity: number;
@@ -108,10 +127,17 @@ export async function createVehicle(payload: unknown) {
   const { tiresUsage = [], ...vehicle } = data.data;
   const sanitizedUsage = sanitizeTireUsage(vehicle.type, tiresUsage);
 
+  const makeValue = fallbackText(vehicle.make);
+  const modelValue = fallbackText(vehicle.model);
+  const yearValue = fallbackNumber(vehicle.year ?? null, new Date().getFullYear());
+  const licensePlateValue = fallbackUpperText(vehicle.licensePlate);
+  const currentOdometerValue = toNumber(vehicle.currentOdometerKm ?? 0);
+  const insuranceNumberValue = fallbackText(vehicle.insurancePolicyNumber);
+
   const computedStatus: VehicleStatus =
     vehicle.status ??
     computeVehicleStatus({
-      currentOdometerKm: vehicle.currentOdometerKm,
+      currentOdometerKm: currentOdometerValue,
       nextRevisionAtKm: vehicle.nextRevisionAtKm ?? null,
       nextRevisionDate: vehicle.nextRevisionDate ?? null,
     });
@@ -129,17 +155,17 @@ export async function createVehicle(payload: unknown) {
       .values({
         orgId: vehicle.orgId,
         type: vehicle.type,
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        vin: vehicle.vin ?? null,
-        licensePlate: vehicle.licensePlate,
-        currentOdometerKm: vehicle.currentOdometerKm.toString(),
+        make: makeValue,
+        model: modelValue,
+        year: yearValue,
+        vin: vehicle.vin ? vehicle.vin.toUpperCase() : null,
+        licensePlate: licensePlateValue,
+        currentOdometerKm: currentOdometerValue.toString(),
         lastOilChangeDate: toISODate(vehicle.lastOilChangeDate),
         lastRevisionDate: toISODate(vehicle.lastRevisionDate),
         nextRevisionAtKm: normalizeNumeric(vehicle.nextRevisionAtKm ?? null),
         nextRevisionDate: toISODate(vehicle.nextRevisionDate),
-        insurancePolicyNumber: vehicle.insurancePolicyNumber,
+        insurancePolicyNumber: insuranceNumberValue,
         insuranceStartDate: toISODate(vehicle.insuranceStartDate),
         insuranceEndDate: toISODate(vehicle.insuranceEndDate),
         copieConformaStartDate: copieConformaStart,
@@ -233,6 +259,14 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
           ? toISODate(updateData.tachographCheckDate)
           : existing.tachographCheckDate ?? null
         : null;
+    const sanitizedMake = fallbackText(merged.make);
+    const sanitizedModel = fallbackText(merged.model);
+    const sanitizedLicensePlate = fallbackUpperText(merged.licensePlate);
+    const sanitizedYear = fallbackNumber(
+      typeof merged.year === 'number' ? merged.year : Number(merged.year ?? NaN),
+      new Date().getFullYear(),
+    );
+    const sanitizedInsuranceNumber = fallbackText(merged.insurancePolicyNumber);
 
     const computedStatus: VehicleStatus =
       updateData.status ??
@@ -245,17 +279,17 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
     const [updated] = await tx
       .update(vehicles)
       .set({
-        make: merged.make,
-        model: merged.model,
-        year: merged.year,
-        vin: merged.vin ?? null,
-        licensePlate: merged.licensePlate,
+        make: sanitizedMake,
+        model: sanitizedModel,
+        year: sanitizedYear,
+        vin: merged.vin ? merged.vin.toUpperCase() : null,
+        licensePlate: sanitizedLicensePlate,
         currentOdometerKm: toNumber(merged.currentOdometerKm).toString(),
         lastOilChangeDate,
         lastRevisionDate,
         nextRevisionAtKm: normalizeNumeric(merged.nextRevisionAtKm),
         nextRevisionDate: nextRevisionDateValue,
-        insurancePolicyNumber: merged.insurancePolicyNumber,
+        insurancePolicyNumber: sanitizedInsuranceNumber,
         insuranceStartDate,
         insuranceEndDate,
         copieConformaStartDate,

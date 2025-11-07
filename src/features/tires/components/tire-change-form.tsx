@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useApiQuery } from '@/hooks/use-api';
 import { cn } from '@/lib/utils';
 
@@ -37,8 +36,8 @@ const tireChangeSchema = z.object({
   stockId: z.string().uuid('Selectați o anvelopă.'),
   quantity: z.number().int().positive('Cantitatea trebuie să fie cel puțin 1.'),
   date: z.date(),
-  odometerKm: z.number().nonnegative().optional(),
-  notes: z.string().max(500).optional(),
+  odometerKm: z.number().nonnegative().optional().nullable(),
+  driverName: z.string().max(100).optional(),
 });
 
 type TireChangeFormValues = z.infer<typeof tireChangeSchema>;
@@ -55,7 +54,6 @@ type TireStockItem = {
   brand: string;
   model: string;
   dimension: string;
-  dot: string;
   quantity: number;
   location: string | null;
 };
@@ -65,7 +63,6 @@ type MountedTire = {
   brand: string;
   model: string;
   dimension: string;
-  dot: string;
   mountDate: string;
   mountOdometerKm: number | null;
 };
@@ -102,7 +99,7 @@ export function TireChangeForm({
       quantity: 1,
       date: new Date(),
       odometerKm: 0,
-      notes: '',
+      driverName: '',
     },
   });
 
@@ -143,7 +140,7 @@ export function TireChangeForm({
           quantity: values.quantity,
           date: values.date,
           odometerKm: values.odometerKm,
-          notes: values.notes,
+          driverName: values.driverName?.trim() ? values.driverName.trim() : undefined,
         }),
       });
 
@@ -224,7 +221,7 @@ export function TireChangeForm({
                     const itemId = 'stockId' in item ? item.stockId : 'id' in item ? (item as TireStockItem).id : '';
                     return (
                       <SelectItem key={itemId} value={itemId}>
-                        {item.brand} {item.model} • {item.dimension} • DOT: {item.dot}
+                        {item.brand} {item.model} • {item.dimension}
                         {operation === 'MONTARE' && 'quantity' in item && ` (Disponibil: ${item.quantity})`}
                       </SelectItem>
                     );
@@ -297,15 +294,14 @@ export function TireChangeForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observații</Label>
-            <Textarea
-              id="notes"
-              rows={3}
-              placeholder="Detalii suplimentare..."
-              {...form.register('notes')}
+            <Label htmlFor="driverName">Nume șofer</Label>
+            <Input
+              id="driverName"
+              placeholder="Numele șoferului..."
+              {...form.register('driverName')}
             />
-            {form.formState.errors.notes && (
-              <p className="text-xs text-destructive">{form.formState.errors.notes.message}</p>
+            {form.formState.errors.driverName && (
+              <p className="text-xs text-destructive">{form.formState.errors.driverName.message}</p>
             )}
           </div>
 

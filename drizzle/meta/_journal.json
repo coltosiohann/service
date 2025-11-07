@@ -15,6 +15,41 @@
       "when": 1762469062647,
       "tag": "0004_add_tire_movement_quantity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762480000000,
+      "tag": "0005_remove_service_cost_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1762485000000,
+      "tag": "0006_remove_tire_dot",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762487000000,
+      "tag": "0007_add_tire_driver_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762489000000,
+      "tag": "0008_add_trailer_vehicle_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762490000000,
+      "tag": "0009_tire_stock_movements_cascade",
+      "breakpoints": true
     }
   ]
 }

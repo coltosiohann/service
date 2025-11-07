@@ -47,7 +47,7 @@ async function main() {
     console.log('✅ Tire schema migration completed successfully!');
     console.log('');
     console.log('New schema:');
-    console.log('- tire_stocks: brand, model, dimension, dot, quantity, location');
+    console.log('- tire_stocks: brand, model, dimension, quantity, location');
     console.log('- tire_stock_movements: stockId, orgId, vehicleId, type (INTRARE/IESIRE/MONTARE/DEMONTARE), date, odometerKm, notes, userId');
 
   } catch (error) {

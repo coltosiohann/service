@@ -131,6 +131,22 @@ async function main() {
       insuranceEndDate: toDate(addDays(now, 90)),
       status: "OK",
     },
+    {
+      id: crypto.randomUUID(),
+      orgId,
+      type: "TRAILER",
+      make: "Schmitz",
+      model: "S.KO",
+      year: 2019,
+      vin: null,
+      licensePlate: "B-55-TRL",
+      currentOdometerKm: "0",
+      insuranceProvider: "Omniasig",
+      insurancePolicyNumber: "TRL-2024-001",
+      insuranceStartDate: toDate(subDays(now, 120)),
+      insuranceEndDate: toDate(addDays(now, 200)),
+      status: "OK",
+    },
   ];
 
   const serviceEventsData: InferModel<typeof serviceEvents, "insert">[] = [
@@ -143,8 +159,6 @@ async function main() {
       nextDueKm: "35000",
       nextDueDate: toDate(addDays(now, 60)),
       notes: "Revizie completa, schimb filtre si verificari electrice.",
-      costCurrency: "RON",
-      costAmount: "1500",
       createdBy: mechanicId,
     },
     {
@@ -156,8 +170,6 @@ async function main() {
       nextDueKm: "84000",
       nextDueDate: toDate(addDays(now, 90)),
       notes: "Inlocuit placute frana si discuri fata.",
-      costCurrency: "RON",
-      costAmount: "2300",
       createdBy: mechanicId,
     },
   ];
@@ -237,9 +249,9 @@ async function main() {
   ];
 
   const tireStocksData: InferModel<typeof tireStocks, "insert">[] = [
-    { id: crypto.randomUUID(), orgId, brand: "Michelin", model: "X Multi Z", dimension: "315/70 R22.5", dot: "2024", location: "Depozit A", quantity: 12 },
-    { id: crypto.randomUUID(), orgId, brand: "Continental", model: "HDR2", dimension: "385/65 R22.5", dot: "2023", location: "Depozit A", quantity: 8 },
-    { id: crypto.randomUUID(), orgId, brand: "Goodyear", model: "KMAX S", dimension: "295/80 R22.5", dot: "2024", location: "Depozit B", quantity: 6 },
+    { id: crypto.randomUUID(), orgId, brand: "Michelin", model: "X Multi Z", dimension: "315/70 R22.5", location: "Depozit A", quantity: 12 },
+    { id: crypto.randomUUID(), orgId, brand: "Continental", model: "HDR2", dimension: "385/65 R22.5", location: "Depozit A", quantity: 8 },
+    { id: crypto.randomUUID(), orgId, brand: "Goodyear", model: "KMAX S", dimension: "295/80 R22.5", location: "Depozit B", quantity: 6 },
   ];
 
   const notificationsData: InferModel<typeof notifications, "insert">[] = [

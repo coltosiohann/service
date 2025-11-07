@@ -46,7 +46,6 @@ export async function listTireStock(orgId: string) {
       brand: tireStocks.brand,
       model: tireStocks.model,
       dimension: tireStocks.dimension,
-      dot: tireStocks.dot,
       quantity: tireStocks.quantity,
       location: tireStocks.location,
       updatedAt: tireStocks.updatedAt,
@@ -87,14 +86,18 @@ export async function createTireStock(payload: unknown) {
 
   const data = parsed.data;
 
+  const fallback = (value: string | undefined, defaultValue = 'N/A') => {
+    const normalized = value?.trim();
+    return normalized && normalized.length > 0 ? normalized : defaultValue;
+  };
+
   const [record] = await db
     .insert(tireStocks)
     .values({
       orgId: data.orgId,
-      brand: data.brand.trim(),
-      model: data.model.trim(),
-      dimension: data.dimension.trim().toUpperCase(),
-      dot: data.dot.trim().toUpperCase(),
+      brand: fallback(data.brand),
+      model: fallback(data.model),
+      dimension: fallback(data.dimension, 'N/A').toUpperCase(),
       quantity: data.quantity,
       location: normalizeText(data.location),
     })
@@ -125,6 +128,7 @@ async function changeStockQuantity(
     odometerKm,
     notes,
     userId,
+    driverName,
   }: {
     orgId: string;
     stockId: string;
@@ -135,6 +139,7 @@ async function changeStockQuantity(
     odometerKm?: number | null;
     notes?: string | null;
     userId?: string | null;
+    driverName?: string | null;
   },
 ) {
   const stock = await client.query.tireStocks.findFirst({
@@ -179,6 +184,7 @@ async function changeStockQuantity(
     date: toISODateString(date) ?? new Date().toISOString().slice(0, 10),
     quantity,
     odometerKm: odometerKm != null ? odometerKm.toString() : null,
+    driverName: driverName ?? null,
     notes: normalizeText(notes),
     userId: userId ?? null,
   });
@@ -230,7 +236,7 @@ export async function mountTires(payload: TireMountInput, userId?: string) {
       vehicleId: data.vehicleId,
       date: data.date,
       odometerKm: data.odometerKm,
-      notes: data.notes,
+      driverName: data.driverName,
       userId,
     });
   });
@@ -254,7 +260,7 @@ export async function unmountTires(payload: TireUnmountInput, userId?: string) {
       vehicleId: data.vehicleId,
       date: data.date,
       odometerKm: data.odometerKm,
-      notes: data.notes,
+      driverName: data.driverName,
       userId,
     });
   });
@@ -278,7 +284,6 @@ export async function listVehicleTireMovements(vehicleId: string, orgId: string,
           brand: true,
           model: true,
           dimension: true,
-          dot: true,
         },
       },
     },
@@ -297,7 +302,6 @@ export async function listVehicleTireMovements(vehicleId: string, orgId: string,
     brand: row.stock?.brand ?? '',
     model: row.stock?.model ?? '',
     dimension: row.stock?.dimension ?? '',
-    dot: row.stock?.dot ?? '',
   }));
 }
 
@@ -342,6 +346,7 @@ export async function listStockMovements(stockId: string, orgId: string) {
     vehicleModel: row.vehicle?.model ?? null,
     userName: row.user?.name ?? null,
     userEmail: row.user?.email ?? null,
+    driverName: row.driverName ?? null,
   }));
 }
 
@@ -359,7 +364,6 @@ export async function listRecentTireMovements(orgId: string, limit = 50) {
           brand: true,
           model: true,
           dimension: true,
-          dot: true,
         },
       },
       vehicle: {
@@ -381,12 +385,12 @@ export async function listRecentTireMovements(orgId: string, limit = 50) {
     brand: row.stock?.brand ?? '',
     model: row.stock?.model ?? '',
     dimension: row.stock?.dimension ?? '',
-    dot: row.stock?.dot ?? '',
     vehicleId: row.vehicleId ?? null,
     vehicleLicensePlate: row.vehicle?.licensePlate ?? null,
     vehicleMake: row.vehicle?.make ?? null,
     vehicleModel: row.vehicle?.model ?? null,
     notes: row.notes,
+    driverName: row.driverName ?? null,
   }));
 }
 
@@ -426,7 +430,6 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
       brand: tireStocks.brand,
       model: tireStocks.model,
       dimension: tireStocks.dimension,
-      dot: tireStocks.dot,
     })
     .from(tireStockMovements)
     .innerJoin(tireStocks, eq(tireStockMovements.stockId, tireStocks.id))
@@ -445,7 +448,6 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
       brand: string;
       model: string;
       dimension: string;
-      dot: string;
       mountDate: string;
       mountOdometerKm: number | null;
       quantity: number;
@@ -460,7 +462,6 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
           brand: movement.brand,
           model: movement.model,
           dimension: movement.dimension,
-          dot: movement.dot,
           mountDate: movement.date,
           mountOdometerKm: movement.odometerKm ? Number(movement.odometerKm) : null,
           quantity: movement.quantity ?? 0,

@@ -22,7 +22,7 @@ import { TachographBadge } from './tachograph-badge';
 type VehicleListItem = {
   id: string;
   orgId: string;
-  type: 'CAR' | 'TRUCK' | 'EQUIPMENT';
+  type: 'CAR' | 'TRUCK' | 'EQUIPMENT' | 'TRAILER';
   make: string;
   model: string;
   year: number;
@@ -44,6 +44,7 @@ const typeFilters = [
   { value: 'ALL', label: 'Toate' },
   { value: 'CAR', label: 'Masini' },
   { value: 'TRUCK', label: 'Camioane' },
+  { value: 'TRAILER', label: 'Remorci' },
   { value: 'EQUIPMENT', label: 'Utilaje' },
 ] as const;
 
@@ -77,7 +78,7 @@ const tachographFilters = [
 
 export function VehiclesTable() {
   const router = useRouter();
-  const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK' | 'EQUIPMENT'>('ALL');
+  const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK' | 'TRAILER' | 'EQUIPMENT'>('ALL');
   const [status, setStatus] = useState<'ALL' | 'OK' | 'DUE_SOON' | 'OVERDUE'>('ALL');
   const [insurance, setInsurance] = useState<'ALL' | 'active' | 'expiring' | 'expired'>('ALL');
   const [truckTonaj, setTruckTonaj] = useState<'ALL' | 'true' | 'false'>('ALL');

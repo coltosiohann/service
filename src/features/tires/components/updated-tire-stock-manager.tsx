@@ -28,7 +28,6 @@ type TireStockItem = {
   brand: string;
   model: string;
   dimension: string;
-  dot: string;
   quantity: number;
   location: string | null;
   updatedAt: string | null;
@@ -49,6 +48,7 @@ type TireMovement = {
   vehicleModel: string | null;
   userName: string | null;
   userEmail: string | null;
+  driverName: string | null;
 };
 
 type TireActivityItem = {
@@ -59,12 +59,12 @@ type TireActivityItem = {
   brand: string;
   model: string;
   dimension: string;
-  dot: string;
   vehicleId: string | null;
   vehicleLicensePlate: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
   notes: string | null;
+  driverName: string | null;
 };
 
 const MOVEMENT_META: Record<
@@ -129,7 +129,6 @@ export function UpdatedTireStockManager() {
       brand: '',
       model: '',
       dimension: '',
-      dot: '',
       quantity: 0,
       location: '',
     },
@@ -248,31 +247,24 @@ export function UpdatedTireStockManager() {
         <CardContent>
           <form onSubmit={handleCreate} className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="brand">Marcă *</Label>
+              <Label htmlFor="brand">Marcă (opțional)</Label>
               <Input id="brand" placeholder="Ex: Michelin" {...form.register('brand')} />
               {form.formState.errors.brand && (
                 <p className="text-xs text-destructive">{form.formState.errors.brand.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="model">Model *</Label>
+              <Label htmlFor="model">Model (opțional)</Label>
               <Input id="model" placeholder="Ex: X Multi Z" {...form.register('model')} />
               {form.formState.errors.model && (
                 <p className="text-xs text-destructive">{form.formState.errors.model.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dimension">Dimensiune *</Label>
+              <Label htmlFor="dimension">Dimensiune (opțional)</Label>
               <Input id="dimension" placeholder="Ex: 315/70 R22.5" {...form.register('dimension')} />
               {form.formState.errors.dimension && (
                 <p className="text-xs text-destructive">{form.formState.errors.dimension.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dot">DOT *</Label>
-              <Input id="dot" placeholder="Ex: 2024" {...form.register('dot')} />
-              {form.formState.errors.dot && (
-                <p className="text-xs text-destructive">{form.formState.errors.dot.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -336,7 +328,6 @@ export function UpdatedTireStockManager() {
                     <TableHead>Marcă</TableHead>
                     <TableHead>Model</TableHead>
                     <TableHead>Dimensiune</TableHead>
-                    <TableHead>DOT</TableHead>
                     <TableHead>Stoc curent</TableHead>
                     <TableHead>Locație</TableHead>
                     <TableHead className="text-right">Acțiuni</TableHead>
@@ -348,7 +339,6 @@ export function UpdatedTireStockManager() {
                       <TableCell className="font-medium">{item.brand}</TableCell>
                       <TableCell>{item.model}</TableCell>
                       <TableCell>{item.dimension}</TableCell>
-                      <TableCell>{item.dot}</TableCell>
                       <TableCell>
                         <Badge variant={item.quantity > 0 ? 'secondary' : 'outline'}>
                           {item.quantity}
@@ -440,7 +430,7 @@ export function UpdatedTireStockManager() {
                           {movement.quantity} x {movement.brand} {movement.model}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {movement.dimension} · DOT: {movement.dot}
+                        {movement.dimension}
                         </p>
                       </div>
                       <div className="text-right">
@@ -448,26 +438,27 @@ export function UpdatedTireStockManager() {
                         <p className="mt-1 text-xs text-muted-foreground">{formatDate(movement.date)}</p>
                       </div>
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {movement.vehicleLicensePlate ? (
-                        <>
-                          Vehicul:{' '}
-                          {movement.vehicleId ? (
-                            <Link
-                              href={`/vehicule/${movement.vehicleId}`}
-                              className="font-medium text-primary underline-offset-2 hover:underline"
-                            >
-                              {movement.vehicleLicensePlate}
-                            </Link>
-                          ) : (
-                            <span className="font-medium">{movement.vehicleLicensePlate}</span>
-                          )}{' '}
-                          {movement.vehicleMake} {movement.vehicleModel}
-                        </>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {movement.vehicleLicensePlate ? (
+                    <>
+                      Vehicul:{' '}
+                      {movement.vehicleId ? (
+                        <Link
+                          href={`/vehicule/${movement.vehicleId}`}
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          {movement.vehicleLicensePlate}
+                        </Link>
                       ) : (
-                        'Operatiune direct in stoc'
-                      )}
-                    </div>
+                        <span className="font-medium">{movement.vehicleLicensePlate}</span>
+                      )}{' '}
+                      {movement.vehicleMake} {movement.vehicleModel}
+                      {movement.driverName && ` · Șofer: ${movement.driverName}`}
+                    </>
+                  ) : (
+                    'Operatiune direct in stoc'
+                  )}
+                </div>
                     {movement.notes && <p className="mt-2 text-sm">{movement.notes}</p>}
                   </div>
                 );
@@ -488,7 +479,7 @@ export function UpdatedTireStockManager() {
             <div className="space-y-4">
               <div className="text-sm">
                 <p className="font-medium">
-                  {selectedStock.brand} {selectedStock.model} • {selectedStock.dimension} • DOT: {selectedStock.dot}
+                  {selectedStock.brand} {selectedStock.model} • {selectedStock.dimension}
                 </p>
                 <p className="text-muted-foreground">
                   Stoc curent: {selectedStock.quantity}
@@ -539,7 +530,7 @@ export function UpdatedTireStockManager() {
             <div className="space-y-4">
               <div className="text-sm">
                 <p className="font-medium">
-                  {selectedStock.brand} {selectedStock.model} • {selectedStock.dimension} • DOT: {selectedStock.dot}
+                  {selectedStock.brand} {selectedStock.model} • {selectedStock.dimension}
                 </p>
               </div>
               {movements.length === 0 ? (
@@ -573,14 +564,19 @@ export function UpdatedTireStockManager() {
                             {movement.vehicleMake} {movement.vehicleModel}
                           </p>
                         )}
-                        {movement.odometerKm && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Kilometraj: {movement.odometerKm.toLocaleString('ro-RO')} km
-                          </p>
-                        )}
-                        {movement.notes && (
-                          <p className="mt-1 text-sm">{movement.notes}</p>
-                        )}
+                    {movement.odometerKm && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Kilometraj: {movement.odometerKm.toLocaleString('ro-RO')} km
+                      </p>
+                    )}
+                    {movement.driverName && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Șofer: {movement.driverName}
+                      </p>
+                    )}
+                    {movement.notes && (
+                      <p className="mt-1 text-sm">{movement.notes}</p>
+                    )}
                         {movement.userName && (
                           <p className="mt-1 text-xs text-muted-foreground">
                             Utilizator: {movement.userName}

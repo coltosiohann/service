@@ -37,8 +37,6 @@ const interventionSchema = z.object({
   odometerKm: z.number().nonnegative(),
   notes: z.string().max(2000).optional(),
   partsUsed: z.string().max(1000).optional(),
-  costAmount: z.number().nonnegative().optional(),
-  costCurrency: z.string().default('RON'),
 });
 
 type InterventionFormValues = z.infer<typeof interventionSchema>;
@@ -75,8 +73,6 @@ export function InterventionForm({
       odometerKm: 0,
       notes: '',
       partsUsed: '',
-      costAmount: 0,
-      costCurrency: 'RON',
     },
   });
 
@@ -200,42 +196,6 @@ export function InterventionForm({
             {form.formState.errors.partsUsed && (
               <p className="text-xs text-destructive">{form.formState.errors.partsUsed.message}</p>
             )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="costAmount">Cost total</Label>
-              <Input
-                id="costAmount"
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="0.00"
-                {...form.register('costAmount', { valueAsNumber: true })}
-              />
-              {form.formState.errors.costAmount && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.costAmount.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="costCurrency">Monedă</Label>
-              <Select
-                value={form.watch('costCurrency')}
-                onValueChange={(value) => form.setValue('costCurrency', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RON">RON</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">

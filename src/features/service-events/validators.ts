@@ -9,8 +9,6 @@ export const serviceEventPayloadSchema = z.object({
   nextDueKm: z.coerce.number().positive().optional().nullable(),
   nextDueDate: z.coerce.date().optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
-  costCurrency: z.string().min(3).max(3).transform((value) => value.toUpperCase()),
-  costAmount: z.coerce.number().nonnegative().optional().nullable(),
 });
 
 export const serviceEventUpdateSchema = serviceEventPayloadSchema.partial({

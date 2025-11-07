@@ -1,11 +1,20 @@
 import { z } from 'zod';
 
+const optionalTextField = (max: number, message: string) =>
+  z
+    .string()
+    .max(max, message)
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim() ?? '';
+      return trimmed.length > 0 ? trimmed : undefined;
+    });
+
 export const tireStockCreateSchema = z.object({
   orgId: z.string().uuid(),
-  brand: z.string().min(1, 'Marca este obligatorie.').max(100),
-  model: z.string().min(1, 'Modelul este obligatoriu.').max(100),
-  dimension: z.string().min(3, 'Dimensiunea este obligatorie.').max(50),
-  dot: z.string().min(4, 'DOT este obligatoriu.').max(20),
+  brand: optionalTextField(100, 'Marca poate avea cel mult 100 de caractere.'),
+  model: optionalTextField(100, 'Modelul poate avea cel mult 100 de caractere.'),
+  dimension: optionalTextField(50, 'Dimensiunea poate avea cel mult 50 de caractere.'),
   quantity: z.coerce.number().int().min(0, 'Cantitatea trebuie sa fie pozitiva.').default(0),
   location: z
     .string()
@@ -32,7 +41,7 @@ export const tireMountSchema = z.object({
   quantity: z.coerce.number().int().positive('Cantitatea trebuie sa fie cel putin 1.').default(1),
   date: z.coerce.date(),
   odometerKm: z.coerce.number().nonnegative().optional().nullable(),
-  notes: z.string().max(500).optional().nullable(),
+  driverName: z.string().max(100).optional().nullable(),
 });
 
 export const tireUnmountSchema = z.object({
@@ -42,7 +51,7 @@ export const tireUnmountSchema = z.object({
   quantity: z.coerce.number().int().positive('Cantitatea trebuie sa fie cel putin 1.').default(1),
   date: z.coerce.date(),
   odometerKm: z.coerce.number().nonnegative().optional().nullable(),
-  notes: z.string().max(500).optional().nullable(),
+  driverName: z.string().max(100).optional().nullable(),
 });
 
 export const tireStockAdjustSchema = z.object({

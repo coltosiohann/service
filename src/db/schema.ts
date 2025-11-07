@@ -17,7 +17,7 @@ import {
 
 export const membershipRoleEnum = pgEnum('membership_role', ['OWNER', 'ADMIN', 'MECHANIC', 'VIEWER']);
 
-export const vehicleTypeEnum = pgEnum('vehicle_type', ['CAR', 'TRUCK', 'EQUIPMENT']);
+export const vehicleTypeEnum = pgEnum('vehicle_type', ['CAR', 'TRUCK', 'EQUIPMENT', 'TRAILER']);
 export const vehicleStatusEnum = pgEnum('vehicle_status', ['OK', 'DUE_SOON', 'OVERDUE']);
 
 export const serviceEventTypeEnum = pgEnum('service_event_type', [
@@ -148,16 +148,12 @@ export const serviceEvents = pgTable(
       .references(() => vehicles.id, { onDelete: 'cascade' }),
     type: serviceEventTypeEnum('type').notNull(),
     date: date('date').notNull(),
-    odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
-    nextDueKm: numeric('next_due_km', { precision: 12, scale: 2 }),
-    nextDueDate: date('next_due_date'),
-    notes: text('notes'),
-    costCurrency: text('cost_currency').default('RON'),
-    costAmount: numeric('cost_amount', { precision: 10, scale: 2 }),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id, { onDelete: 'restrict' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+      odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
+      nextDueKm: numeric('next_due_km', { precision: 12, scale: 2 }),
+      nextDueDate: date('next_due_date'),
+      notes: text('notes'),
+      createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+      createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
     vehicleDateIdx: index('service_events_vehicle_date_idx').on(table.vehicleId, table.date),
@@ -400,7 +396,6 @@ export const tireStocks = pgTable(
     brand: text('brand').notNull(),
     model: text('model').notNull(),
     dimension: text('dimension').notNull(),
-    dot: text('dot').notNull(),
     quantity: integer('quantity').notNull().default(0),
     location: text('location'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -409,12 +404,11 @@ export const tireStocks = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => ({
-    orgBrandModelDimensionDotIdx: index('tire_stocks_org_brand_model_dimension_dot_idx').on(
+    orgBrandModelDimensionIdx: index('tire_stocks_org_brand_model_dimension_idx').on(
       table.orgId,
       table.brand,
       table.model,
       table.dimension,
-      table.dot,
     ),
     orgIdx: index('tire_stocks_org_id_idx').on(table.orgId),
     quantityCheck: check('tire_stocks_quantity_non_negative', sql`${table.quantity} >= 0`),
@@ -427,7 +421,7 @@ export const tireStockMovements = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     stockId: uuid('stock_id')
       .notNull()
-      .references(() => tireStocks.id, { onDelete: 'restrict' }),
+      .references(() => tireStocks.id, { onDelete: 'cascade' }),
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
@@ -436,6 +430,7 @@ export const tireStockMovements = pgTable(
     date: date('date').notNull(),
     quantity: integer('quantity').notNull().default(0),
     odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
+    driverName: text('driver_name'),
     notes: text('notes'),
     userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

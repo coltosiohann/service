@@ -12,7 +12,7 @@ import { TachographBadge } from '@/features/vehicles/components/tachograph-badge
 import { VehicleDetailActions } from '@/features/vehicles/components/vehicle-detail-actions';
 import { getVehicleDetail } from '@/features/vehicles/detail';
 import { getDefaultOrg } from '@/lib/default-org';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 
 type PageProps = {
   params: { id: string };
@@ -60,7 +60,13 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {vehicle.make} {vehicle.model} - {vehicle.year}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {vehicle.type === 'TRUCK' ? 'Camion' : vehicle.type === 'EQUIPMENT' ? 'Utilaje' : 'Masina'}
+            {vehicle.type === 'TRUCK'
+              ? 'Camion'
+              : vehicle.type === 'EQUIPMENT'
+                ? 'Utilaje'
+                : vehicle.type === 'TRAILER'
+                  ? 'Remorca'
+                  : 'Masina'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -169,13 +175,8 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                     <span className="font-medium">{event.type}</span>
                     <span className="text-muted-foreground">{formatDate(event.date)}</span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{event.odometerKm ? `${Number(event.odometerKm).toLocaleString('ro-RO')} km` : ''}</span>
-                    <span>
-                      {event.costAmount
-                        ? formatCurrency(Number(event.costAmount), 'ro-RO', event.costCurrency ?? 'RON')
-                        : ''}
-                    </span>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {event.odometerKm ? `${Number(event.odometerKm).toLocaleString('ro-RO')} km` : ''}
                   </div>
                   {event.notes && <p className="mt-2 text-sm">{event.notes}</p>}
                 </div>
@@ -219,7 +220,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                       <Badge variant="secondary">Montat</Badge>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {tire.dimension} • DOT: {tire.dot}
+                      {tire.dimension}
                     </div>
                     {tire.mountDate && (
                       <div className="mt-1 text-xs text-muted-foreground">
@@ -244,7 +245,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                       <span className="text-muted-foreground">{formatDate(movement.date)}</span>
                     </div>
                     <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{movement.dimension} • DOT: {movement.dot}</span>
+                      <span>{movement.dimension}</span>
                       <Badge variant={movement.type === 'MONTARE' || movement.type === 'INTRARE' ? 'secondary' : 'outline'}>
                         {movement.type}
                       </Badge>

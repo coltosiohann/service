@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       quantity: body.quantity,
       date: body.date,
       odometerKm: body.odometerKm,
-      notes: body.notes,
+      driverName: body.driverName,
     });
 
     return NextResponse.json({ success: true });
