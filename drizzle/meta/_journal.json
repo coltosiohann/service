@@ -50,6 +50,20 @@
       "when": 1762490000000,
       "tag": "0009_tire_stock_movements_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1762792232112,
+      "tag": "0007_messy_the_enforcers",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762792923120,
+      "tag": "0008_nice_purple_man",
+      "breakpoints": true
     }
   ]
 }

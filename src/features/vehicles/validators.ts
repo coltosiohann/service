@@ -57,7 +57,7 @@ export const vehiclePayloadSchema = z
     make: optionalTrimmedString(100, 'Marca poate avea cel mult 100 de caractere.'),
     model: optionalTrimmedString(100, 'Modelul poate avea cel mult 100 de caractere.'),
     year: optionalNumber(z.number().int()),
-    vin: optionalTrimmedString(17, 'VIN poate avea cel mult 17 caractere.'),
+    vin: optionalTrimmedString(25, 'VIN poate avea cel mult 25 de caractere.'),
     licensePlate: optionalTrimmedString(50, 'Numarul de inmatriculare poate avea cel mult 50 de caractere.'),
     currentOdometerKm: optionalNumber(z.number().nonnegative()),
     lastOilChangeDate: optionalDate(),
@@ -79,7 +79,7 @@ export const vehiclePayloadSchema = z
     tiresUsage: z.array(tireUsageEntrySchema).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.type === 'CAR' || data.type === 'EQUIPMENT') {
+    if (data.type === 'CAR' || data.type === 'EQUIPMENT' || data.type === 'TRAILER') {
       if (data.hasHeavyTonnageAuthorization != null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

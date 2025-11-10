@@ -47,14 +47,32 @@ export async function POST(request: NextRequest) {
     // Authentication disabled
 
     const body = await request.json();
+    console.log('Received vehicle creation request:', JSON.stringify(body, null, 2));
+
     const defaultOrgId = await getDefaultOrgId();
+    console.log('Default org ID:', defaultOrgId);
+
     const vehicle = await createVehicle({
       ...body,
       orgId: body.orgId ?? defaultOrgId,
     });
 
+    console.log('Vehicle created successfully:', vehicle.id);
     return jsonResponse({ vehicle }, { status: 201 });
   } catch (error) {
+    console.error('Error in POST /api/vehicles:', error);
+
+    // Log validation details if available
+    if (error && typeof error === 'object' && 'details' in error) {
+      console.error('Validation errors:', JSON.stringify(error.details, null, 2));
+    }
+
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      ...(error && typeof error === 'object' ? error : {}),
+    });
     return errorResponse(error);
   }
 }

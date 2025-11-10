@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -37,6 +38,8 @@ const interventionSchema = z.object({
   odometerKm: z.number().nonnegative(),
   notes: z.string().max(2000).optional(),
   partsUsed: z.string().max(1000).optional(),
+  oilStockId: z.string().uuid().optional(),
+  oilQuantityLiters: z.number().positive().optional(),
 });
 
 type InterventionFormValues = z.infer<typeof interventionSchema>;
@@ -73,6 +76,27 @@ export function InterventionForm({
       odometerKm: 0,
       notes: '',
       partsUsed: '',
+      oilStockId: undefined,
+      oilQuantityLiters: undefined,
+    },
+  });
+
+  const { data: oilStock = [] } = useQuery({
+    queryKey: ['oilStock'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/oil/stock');
+        if (!response.ok) {
+          console.error('Failed to fetch oil stock');
+          return [];
+        }
+        const result = await response.json();
+        // API returns { data: { stock: [...] } }
+        return (result.data?.stock || []) as Array<{ id: string; oilType: string; brand: string; quantityLiters: number }>;
+      } catch (error) {
+        console.error('Error fetching oil stock:', error);
+        return [];
+      }
     },
   });
 
@@ -94,6 +118,30 @@ export function InterventionForm({
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.message ?? 'Nu s-a putut salva intervenția.');
+      }
+
+      // If oil was used, record it
+      if (values.oilStockId && values.oilQuantityLiters) {
+        try {
+          const oilResponse = await fetch('/api/oil/use', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stockId: values.oilStockId,
+              vehicleId,
+              quantityLiters: values.oilQuantityLiters,
+              date: values.date,
+              odometerKm: values.odometerKm,
+              notes: `Schimb ulei - ${typeLabels[values.type]}`,
+            }),
+          });
+
+          if (!oilResponse.ok) {
+            console.error('Failed to record oil usage');
+          }
+        } catch (error) {
+          console.error('Error recording oil usage:', error);
+        }
       }
 
       toast.success('Intervenția a fost salvată.');
@@ -197,6 +245,53 @@ export function InterventionForm({
               <p className="text-xs text-destructive">{form.formState.errors.partsUsed.message}</p>
             )}
           </div>
+
+          {(form.watch('type') === 'OIL_CHANGE' || form.watch('type') === 'REVISION') && (
+            <div className="rounded-lg border bg-slate-50 p-4 space-y-4">
+              <h3 className="font-semibold text-sm">Utilizare ulei din stoc</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="oilStockId">Tip ulei</Label>
+                <Select
+                  value={form.watch('oilStockId') || ''}
+                  onValueChange={(value) => form.setValue('oilStockId', value || undefined)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selectați tipul de ulei" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {oilStock.length === 0 ? (
+                      <SelectItem value="none" disabled>Nu exista ulei in stoc</SelectItem>
+                    ) : (
+                      oilStock.map((oil) => (
+                        <SelectItem key={oil.id} value={oil.id}>
+                          {oil.oilType} - {oil.brand} ({oil.quantityLiters.toFixed(2)} L disponibili)
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.oilStockId && (
+                  <p className="text-xs text-destructive">{form.formState.errors.oilStockId.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="oilQuantityLiters">Cantitate utilizată (litri)</Label>
+                <Input
+                  id="oilQuantityLiters"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  placeholder="Ex: 5"
+                  {...form.register('oilQuantityLiters', { valueAsNumber: true })}
+                />
+                {form.formState.errors.oilQuantityLiters && (
+                  <p className="text-xs text-destructive">{form.formState.errors.oilQuantityLiters.message}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Observații</Label>

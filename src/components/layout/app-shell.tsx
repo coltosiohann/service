@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CircleDot, Gauge, Settings, Truck } from 'lucide-react';
+import { Bell, CircleDot, Droplet, Gauge, Settings, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -13,13 +13,14 @@ import type { ReactNode } from 'react';
 export type AppShellNavItem = {
   href: Route;
   label: string;
-  icon: 'dashboard' | 'vehicles' | 'tires' | 'reminders' | 'settings';
+  icon: 'dashboard' | 'vehicles' | 'tires' | 'oil' | 'reminders' | 'settings';
 };
 
 const iconMap: Record<AppShellNavItem['icon'], ReactNode> = {
   dashboard: <Gauge className="size-4" />,
   vehicles: <Truck className="size-4" />,
   tires: <CircleDot className="size-4" />,
+  oil: <Droplet className="size-4" />,
   reminders: <Bell className="size-4" />,
   settings: <Settings className="size-4" />,
 };

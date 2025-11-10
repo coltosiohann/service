@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Panou general', icon: 'dashboard' },
   { href: '/vehicule', label: 'Autovehicule', icon: 'vehicles' },
   { href: '/anvelope', label: 'Stoc anvelope', icon: 'tires' },
+  { href: '/stoc-ulei', label: 'Stoc ulei', icon: 'oil' },
   { href: '/setari', label: 'Setari', icon: 'settings' },
 ] satisfies AppShellNavItem[];
 

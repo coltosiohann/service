@@ -136,6 +136,10 @@ export const vehicles = pgTable(
       'vehicles_truck_tachograph_check',
       sql`${table.type} = 'TRUCK' OR ${table.tachographCheckDate} IS NULL`,
     ),
+    truckCopieConformaCheck: check(
+      'vehicles_truck_copie_conforma_check',
+      sql`${table.type} = 'TRUCK' OR (${table.copieConformaStartDate} IS NULL AND ${table.copieConformaExpiryDate} IS NULL)`,
+    ),
   }),
 );
 
@@ -471,7 +475,100 @@ export const tireStockMovementsRelations = relations(tireStockMovements, ({ one 
   }),
 }));
 
+export const oilMovementTypeEnum = pgEnum('oil_movement_type', ['INTRARE', 'IESIRE', 'UTILIZARE']);
+
+export const oilStocks = pgTable(
+  'oil_stocks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    oilType: text('oil_type').notNull(),
+    brand: text('brand').notNull(),
+    quantityLiters: numeric('quantity_liters', { precision: 10, scale: 2 }).notNull().default('0'),
+    location: text('location'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    orgOilTypeBrandIdx: index('oil_stocks_org_oil_type_brand_idx').on(
+      table.orgId,
+      table.oilType,
+      table.brand,
+    ),
+    orgIdx: index('oil_stocks_org_id_idx').on(table.orgId),
+    quantityCheck: check('oil_stocks_quantity_non_negative', sql`${table.quantityLiters} >= 0`),
+  }),
+);
+
+export const oilStockMovements = pgTable(
+  'oil_stock_movements',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    stockId: uuid('stock_id')
+      .notNull()
+      .references(() => oilStocks.id, { onDelete: 'cascade' }),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    serviceEventId: uuid('service_event_id').references(() => serviceEvents.id, {
+      onDelete: 'set null',
+    }),
+    type: oilMovementTypeEnum('type').notNull(),
+    date: date('date').notNull(),
+    quantityLiters: numeric('quantity_liters', { precision: 10, scale: 2 }).notNull(),
+    odometerKm: numeric('odometer_km', { precision: 12, scale: 2 }),
+    notes: text('notes'),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stockIdx: index('oil_stock_movements_stock_id_idx').on(table.stockId),
+    orgIdx: index('oil_stock_movements_org_id_idx').on(table.orgId),
+    vehicleIdx: index('oil_stock_movements_vehicle_id_idx').on(table.vehicleId),
+    serviceEventIdx: index('oil_stock_movements_service_event_id_idx').on(table.serviceEventId),
+    vehicleDateIdx: index('oil_stock_movements_vehicle_date_idx').on(table.vehicleId, table.date),
+    stockDateIdx: index('oil_stock_movements_stock_date_idx').on(table.stockId, table.date),
+  }),
+);
+
+export const oilStocksRelations = relations(oilStocks, ({ many, one }) => ({
+  organization: one(organizations, {
+    fields: [oilStocks.orgId],
+    references: [organizations.id],
+  }),
+  movements: many(oilStockMovements),
+}));
+
+export const oilStockMovementsRelations = relations(oilStockMovements, ({ one }) => ({
+  stock: one(oilStocks, {
+    fields: [oilStockMovements.stockId],
+    references: [oilStocks.id],
+  }),
+  organization: one(organizations, {
+    fields: [oilStockMovements.orgId],
+    references: [organizations.id],
+  }),
+  vehicle: one(vehicles, {
+    fields: [oilStockMovements.vehicleId],
+    references: [vehicles.id],
+  }),
+  serviceEvent: one(serviceEvents, {
+    fields: [oilStockMovements.serviceEventId],
+    references: [serviceEvents.id],
+  }),
+  user: one(users, {
+    fields: [oilStockMovements.userId],
+    references: [users.id],
+  }),
+}));
+
 export type VehicleStatus = (typeof vehicleStatusEnum.enumValues)[number];
 export type VehicleType = (typeof vehicleTypeEnum.enumValues)[number];
 export type MembershipRole = (typeof membershipRoleEnum.enumValues)[number];
 export type TireMovementType = (typeof tireMovementTypeEnum.enumValues)[number];
+export type OilMovementType = (typeof oilMovementTypeEnum.enumValues)[number];

@@ -70,10 +70,6 @@ function fallbackText(value: string | null | undefined, fallback = 'N/A') {
   return fallback;
 }
 
-function fallbackUpperText(value: string | null | undefined, fallback = 'N/A') {
-  return fallbackText(value, fallback).toUpperCase();
-}
-
 function fallbackNumber(value: number | null | undefined, fallback: number) {
   return typeof value === 'number' && !Number.isNaN(value) ? value : fallback;
 }
@@ -130,7 +126,9 @@ export async function createVehicle(payload: unknown) {
   const makeValue = fallbackText(vehicle.make);
   const modelValue = fallbackText(vehicle.model);
   const yearValue = fallbackNumber(vehicle.year ?? null, new Date().getFullYear());
-  const licensePlateValue = fallbackUpperText(vehicle.licensePlate);
+  const licensePlateValue = vehicle.licensePlate?.trim()
+    ? vehicle.licensePlate.trim().toUpperCase()
+    : `TEMP-${Date.now()}`;
   const currentOdometerValue = toNumber(vehicle.currentOdometerKm ?? 0);
   const insuranceNumberValue = fallbackText(vehicle.insurancePolicyNumber);
 
@@ -261,7 +259,9 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
         : null;
     const sanitizedMake = fallbackText(merged.make);
     const sanitizedModel = fallbackText(merged.model);
-    const sanitizedLicensePlate = fallbackUpperText(merged.licensePlate);
+    const sanitizedLicensePlate = merged.licensePlate?.trim()
+      ? merged.licensePlate.trim().toUpperCase()
+      : existing.licensePlate || `TEMP-${Date.now()}`;
     const sanitizedYear = fallbackNumber(
       typeof merged.year === 'number' ? merged.year : Number(merged.year ?? NaN),
       new Date().getFullYear(),
