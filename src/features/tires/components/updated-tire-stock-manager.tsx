@@ -94,6 +94,7 @@ export function UpdatedTireStockManager() {
   const [adjustmentNotes, setAdjustmentNotes] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingMovementId, setDeletingMovementId] = useState<string | null>(null);
 
   const {
     data,
@@ -235,6 +236,37 @@ export function UpdatedTireStockManager() {
       toast.error(error instanceof Error ? error.message : 'Nu s-a putut șterge anvelopa.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleDeleteMovement = async (movementId: string, movementType: string) => {
+    const confirmed = window.confirm(
+      `Ștergeți această mișcare de tip ${movementType}? Stocul va fi actualizat automat.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingMovementId(movementId);
+
+    try {
+      const response = await fetch(`/api/tires/movements/${movementId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message ?? 'Nu s-a putut șterge mișcarea.');
+      }
+
+      toast.success('Mișcarea a fost ștearsă și stocul a fost actualizat.');
+      await refetch();
+      await refetchMovements();
+      await refetchActivity();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nu s-a putut șterge mișcarea.');
+    } finally {
+      setDeletingMovementId(null);
     }
   };
 
@@ -422,6 +454,7 @@ export function UpdatedTireStockManager() {
             <div className="space-y-3">
               {recentMovements.slice(0, 10).map((movement) => {
                 const meta = MOVEMENT_META[movement.type] ?? { label: movement.type, variant: 'outline' as const };
+                const canDelete = movement.type === 'MONTARE' || movement.type === 'DEMONTARE';
                 return (
                   <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -433,9 +466,22 @@ export function UpdatedTireStockManager() {
                         {movement.dimension}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <Badge variant={meta.variant}>{meta.label}</Badge>
-                        <p className="mt-1 text-xs text-muted-foreground">{formatDate(movement.date)}</p>
+                      <div className="flex items-start gap-2">
+                        <div className="text-right">
+                          <Badge variant={meta.variant}>{meta.label}</Badge>
+                          <p className="mt-1 text-xs text-muted-foreground">{formatDate(movement.date)}</p>
+                        </div>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteMovement(movement.id, meta.label)}
+                            disabled={deletingMovementId === movement.id}
+                            className="h-8 px-2"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                 <div className="mt-2 text-xs text-muted-foreground">
@@ -539,11 +585,25 @@ export function UpdatedTireStockManager() {
                 <div className="space-y-2">
                   {movements.map((movement) => {
                     const meta = MOVEMENT_META[movement.type] ?? { label: movement.type, variant: 'outline' as const };
+                    const canDelete = movement.type === 'MONTARE' || movement.type === 'DEMONTARE';
                     return (
                       <div key={movement.id} className="rounded-2xl border border-border px-4 py-3 text-sm">
                         <div className="flex items-center justify-between">
                           <Badge variant={meta.variant}>{meta.label}</Badge>
-                          <span className="text-xs text-muted-foreground">{formatDate(movement.date)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{formatDate(movement.date)}</span>
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMovement(movement.id, meta.label)}
+                                disabled={deletingMovementId === movement.id}
+                                className="h-6 px-2"
+                              >
+                                <Trash2 className="size-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Cantitate: {movement.quantity}

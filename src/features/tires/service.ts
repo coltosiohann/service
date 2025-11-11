@@ -474,3 +474,74 @@ export async function getMountedTires(vehicleId: string, orgId: string) {
 
   return Array.from(mountedMap.values());
 }
+
+export async function deleteTireMovement(movementId: string, orgId: string) {
+  return await db.transaction(async (tx) => {
+    // Get the movement to delete
+    const movement = await tx.query.tireStockMovements.findFirst({
+      where: (fields, operators) =>
+        operators.and(operators.eq(fields.id, movementId), operators.eq(fields.orgId, orgId)),
+    });
+
+    if (!movement) {
+      throw new NotFoundError('Mișcarea nu a fost găsită.');
+    }
+
+    // Only allow deletion of MONTARE and DEMONTARE movements
+    if (movement.type !== 'MONTARE' && movement.type !== 'DEMONTARE') {
+      throw new ValidationError(
+        'Pot fi șterse doar mișcările de tip MONTARE și DEMONTARE.',
+      );
+    }
+
+    // Get the stock item
+    const stock = await tx.query.tireStocks.findFirst({
+      where: (fields, operators) =>
+        operators.and(
+          operators.eq(fields.id, movement.stockId),
+          operators.eq(fields.orgId, orgId),
+        ),
+    });
+
+    if (!stock) {
+      throw new NotFoundError('Anvelopa nu mai există în stoc.');
+    }
+
+    const currentQuantity = Number(stock.quantity ?? 0);
+    const movementQuantity = movement.quantity ?? 0;
+    let newQuantity = currentQuantity;
+
+    // Reverse the stock change
+    if (movement.type === 'MONTARE') {
+      // MONTARE decreased stock, so add it back
+      newQuantity = currentQuantity + movementQuantity;
+    } else if (movement.type === 'DEMONTARE') {
+      // DEMONTARE increased stock, so subtract it back
+      newQuantity = currentQuantity - movementQuantity;
+    }
+
+    // Validate the new quantity
+    if (newQuantity < 0) {
+      throw new ValidationError(
+        'Nu se poate șterge această mișcare. Stocul ar deveni negativ.',
+      );
+    }
+
+    // Update the stock quantity
+    await tx
+      .update(tireStocks)
+      .set({
+        quantity: newQuantity,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(tireStocks.id, movement.stockId), eq(tireStocks.orgId, orgId)));
+
+    // Delete the movement
+    const [deleted] = await tx
+      .delete(tireStockMovements)
+      .where(and(eq(tireStockMovements.id, movementId), eq(tireStockMovements.orgId, orgId)))
+      .returning();
+
+    return deleted;
+  });
+}
