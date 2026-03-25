@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useApiQuery } from '@/hooks/use-api';
 
 import { InsuranceBadge } from './insurance-badge';
+import { ItpBadge } from './itp-badge';
 import { StatusPill } from './status-pill';
 import { TachographBadge } from './tachograph-badge';
 
@@ -29,6 +30,7 @@ type VehicleListItem = {
   licensePlate: string;
   status: 'OK' | 'DUE_SOON' | 'OVERDUE';
   insuranceStatus: 'active' | 'expiring' | 'expired';
+  itpStatus: 'active' | 'expiring' | 'expired' | null;
   tachographStatus: 'ok' | 'soon' | 'overdue' | 'missing' | null;
   copieConformaStatus: 'ok' | 'soon' | 'overdue' | 'missing' | null;
   hasTonaj: boolean;
@@ -62,6 +64,13 @@ const insuranceFilters = [
   { value: 'expired', label: 'Expirata' },
 ] as const;
 
+const itpFilters = [
+  { value: 'ALL', label: 'ITP' },
+  { value: 'active', label: 'Valabil' },
+  { value: 'expiring', label: 'In curand' },
+  { value: 'expired', label: 'Expirat' },
+] as const;
+
 const tonajFilters = [
   { value: 'ALL', label: 'Tonaj' },
   { value: 'true', label: 'Tonaj mare' },
@@ -81,6 +90,7 @@ export function VehiclesTable() {
   const [type, setType] = useState<'ALL' | 'CAR' | 'TRUCK' | 'TRAILER' | 'EQUIPMENT'>('ALL');
   const [status, setStatus] = useState<'ALL' | 'OK' | 'DUE_SOON' | 'OVERDUE'>('ALL');
   const [insurance, setInsurance] = useState<'ALL' | 'active' | 'expiring' | 'expired'>('ALL');
+  const [itp, setItp] = useState<'ALL' | 'active' | 'expiring' | 'expired'>('ALL');
   const [truckTonaj, setTruckTonaj] = useState<'ALL' | 'true' | 'false'>('ALL');
   const [truckTachograph, setTruckTachograph] = useState<'ALL' | 'ok' | 'soon' | 'overdue' | 'missing'>('ALL');
   const [query, setQuery] = useState('');
@@ -100,11 +110,12 @@ export function VehiclesTable() {
       type: type !== 'ALL' ? type : undefined,
       status: status !== 'ALL' ? status : undefined,
       insurance: insurance !== 'ALL' ? insurance : undefined,
+      itp: itp !== 'ALL' ? itp : undefined,
       search: deferredQuery || undefined,
       'truck.tonajMare': truckTonaj !== 'ALL' ? truckTonaj : undefined,
       'truck.tahograf': truckTachograph !== 'ALL' ? truckTachograph : undefined,
     }),
-    [type, status, insurance, deferredQuery, truckTonaj, truckTachograph],
+    [type, status, insurance, itp, deferredQuery, truckTonaj, truckTachograph],
   );
 
   const { data, isLoading, refetch } = useApiQuery<{ vehicles: VehicleListItem[] }>('/api/vehicles', params, {
@@ -181,6 +192,16 @@ export function VehiclesTable() {
                 {filter.label}
               </Button>
             ))}
+            {itpFilters.map((filter) => (
+              <Button
+                key={filter.value}
+                variant={itp === filter.value ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setItp(filter.value)}
+              >
+                {filter.label}
+              </Button>
+            ))}
           </div>
           <div className="relative max-w-sm flex-1 lg:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -226,6 +247,7 @@ export function VehiclesTable() {
                 <TableHead>Model</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Asigurare</TableHead>
+                <TableHead>ITP</TableHead>
                 <TableHead>Kilometraj</TableHead>
                 <TableHead>Tahograf</TableHead>
                 <TableHead className="text-right">Actiuni</TableHead>
@@ -235,14 +257,14 @@ export function VehiclesTable() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       <Skeleton className="h-10 w-full rounded-2xl" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : vehicles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <p className="py-6 text-center text-sm text-muted-foreground">
                       Nu exista vehicule pentru filtrele selectate.
                     </p>
@@ -279,6 +301,8 @@ export function VehiclesTable() {
                         <span className="text-xs text-muted-foreground">
                           {vehicle.type === 'TRUCK'
                             ? 'Camion'
+                            : vehicle.type === 'TRAILER'
+                              ? 'Remorca'
                             : vehicle.type === 'EQUIPMENT'
                               ? 'Utilaj'
                               : 'Masina'}{' '}
@@ -291,6 +315,13 @@ export function VehiclesTable() {
                     </TableCell>
                     <TableCell>
                       <InsuranceBadge state={vehicle.insuranceStatus} />
+                    </TableCell>
+                    <TableCell>
+                      {vehicle.type === 'EQUIPMENT' || !vehicle.itpStatus ? (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      ) : (
+                        <ItpBadge state={vehicle.itpStatus} />
+                      )}
                     </TableCell>
                     <TableCell>{vehicle.currentOdometerKm.toLocaleString('ro-RO')} km</TableCell>
                     <TableCell>

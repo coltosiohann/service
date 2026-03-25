@@ -1,11 +1,17 @@
 import { differenceInCalendarDays } from 'date-fns';
-import { and, desc, eq, gt, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db, reminders, serviceEvents, vehicles } from '@/db';
 import { toNumber } from '@/features/vehicles/service';
-import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from '@/features/vehicles/status';
+import {
+  computeCopieConformaStatus,
+  computeInsuranceStatus,
+  computeItpStatus,
+  computeTachographStatus,
+} from '@/features/vehicles/status';
 import { getDefaultOrgId } from '@/lib/default-org';
 import { cn, formatDate } from '@/lib/utils';
 
@@ -31,9 +37,12 @@ async function getDashboardData(orgId: string) {
     .where(and(orgActiveCondition, eq(vehicles.status, 'DUE_SOON')));
 
   const today = new Date();
+  const inSevenDays = new Date(today);
+  inSevenDays.setDate(inSevenDays.getDate() + 7);
   const inThirtyDays = new Date(today);
   inThirtyDays.setDate(inThirtyDays.getDate() + 30);
   const todayString = today.toISOString().slice(0, 10);
+  const inSevenDaysString = inSevenDays.toISOString().slice(0, 10);
   const inThirtyDaysString = inThirtyDays.toISOString().slice(0, 10);
 
   const [insuranceExpiring] = await db
@@ -60,6 +69,41 @@ async function getDashboardData(orgId: string) {
         gt(vehicles.copieConformaExpiryDate, todayString),
       ),
     );
+
+  const [itpExpiring] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(
+      and(
+        orgActiveCondition,
+        inArray(vehicles.type, ['CAR', 'TRUCK', 'TRAILER']),
+        isNotNull(vehicles.itpExpiryDate),
+        gte(vehicles.itpExpiryDate, todayString),
+        lte(vehicles.itpExpiryDate, inSevenDaysString),
+      ),
+    );
+
+  const expiringItpVehicles = await db
+    .select({
+      id: vehicles.id,
+      type: vehicles.type,
+      licensePlate: vehicles.licensePlate,
+      make: vehicles.make,
+      model: vehicles.model,
+      itpExpiryDate: vehicles.itpExpiryDate,
+    })
+    .from(vehicles)
+    .where(
+      and(
+        orgActiveCondition,
+        inArray(vehicles.type, ['CAR', 'TRUCK', 'TRAILER']),
+        isNotNull(vehicles.itpExpiryDate),
+        gte(vehicles.itpExpiryDate, todayString),
+        lte(vehicles.itpExpiryDate, inSevenDaysString),
+      ),
+    )
+    .orderBy(vehicles.itpExpiryDate, vehicles.licensePlate)
+    .limit(8);
 
   const upcomingReminders = await db
     .select({
@@ -118,6 +162,7 @@ async function getDashboardData(orgId: string) {
       nextRevisionAtKm: vehicles.nextRevisionAtKm,
       insuranceStartDate: vehicles.insuranceStartDate,
       insuranceEndDate: vehicles.insuranceEndDate,
+      itpExpiryDate: vehicles.itpExpiryDate,
       tachographCheckDate: vehicles.tachographCheckDate,
       copieConformaStartDate: vehicles.copieConformaStartDate,
       copieConformaExpiryDate: vehicles.copieConformaExpiryDate,
@@ -135,6 +180,8 @@ async function getDashboardData(orgId: string) {
     dueSoonVehicles: Number(dueSoonVehicles?.count ?? 0),
     insuranceExpiring: Number(insuranceExpiring?.count ?? 0),
     copieConformaExpiring: Number(copieConformaExpiring?.count ?? 0),
+    itpExpiring: Number(itpExpiring?.count ?? 0),
+    expiringItpVehicles,
     upcomingReminders,
     recentEvents,
     vehiclesList,
@@ -149,12 +196,58 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard title="Total vehicule" value={data.totalVehicles} trend="Panorama completa a flotei" />
         <KpiCard title="Revizii intarziate" value={data.overdueVehicles} tone="danger" trend="Actiuni urgente" />
         <KpiCard title="In curand" value={data.dueSoonVehicles} tone="warning" trend="Planificati interventiile" />
         <KpiCard title="Asigurari care expira" value={data.insuranceExpiring} tone="warning" trend="Verificati documentele" />
         <KpiCard title="Copie Conforma expira" value={data.copieConformaExpiring} tone="warning" trend="Camioane cu documente" />
+        <KpiCard title="ITP expira in 7 zile" value={data.itpExpiring} tone="warning" trend="Programati inspectiile" />
+      </section>
+
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>ITP care expira in 7 zile</CardTitle>
+            <CardDescription>Masini, camioane si remorci care trebuie programate imediat.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {data.expiringItpVehicles.length === 0 ? (
+                <EmptyState message="Nu exista ITP-uri care expira in urmatoarele 7 zile." />
+              ) : (
+                data.expiringItpVehicles.map((vehicle) => {
+                  const daysRemaining = vehicle.itpExpiryDate
+                    ? differenceInCalendarDays(vehicle.itpExpiryDate, new Date())
+                    : null;
+
+                  return (
+                    <Link
+                      key={vehicle.id}
+                      href={`/vehicule/${vehicle.id}`}
+                      className="flex items-center justify-between rounded-2xl border border-border bg-white px-4 py-3 shadow-sm transition-colors hover:bg-muted/40"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {vehicle.licensePlate}  {vehicle.make} {vehicle.model}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {vehicle.type === 'TRUCK'
+                            ? 'Camion'
+                            : vehicle.type === 'TRAILER'
+                              ? 'Remorca'
+                              : 'Masina'}{' '}
+                          - {daysRemaining === 0 ? 'expira astazi' : `expira in ${daysRemaining ?? 0} zile`}
+                        </p>
+                      </div>
+                      <Badge variant="warning">{formatDate(vehicle.itpExpiryDate)}</Badge>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
@@ -236,6 +329,8 @@ export default async function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {data.vehiclesList.map((vehicle) => {
                 const insurance = computeInsuranceStatus(vehicle.insuranceEndDate ?? null);
+                const itp =
+                  vehicle.type !== 'EQUIPMENT' ? computeItpStatus(vehicle.itpExpiryDate ?? null) : null;
                 const tachograph =
                   vehicle.type === 'TRUCK'
                     ? computeTachographStatus(vehicle.tachographCheckDate ?? null)
@@ -283,6 +378,18 @@ export default async function DashboardPage() {
                               : 'Activa'}
                         </dd>
                       </div>
+                      {vehicle.type !== 'EQUIPMENT' && (
+                        <div className="flex justify-between">
+                          <dt className="text-muted-foreground">ITP</dt>
+                          <dd>
+                            {itp === 'expired'
+                              ? 'Expirat'
+                              : itp === 'expiring'
+                                ? 'In 7 zile'
+                                : 'Valabil'}
+                          </dd>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <dt className="text-muted-foreground">Incepand cu</dt>
                         <dd>{formatDate(vehicle.insuranceStartDate)}</dd>
@@ -367,8 +474,6 @@ function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
-
-
 
 
 

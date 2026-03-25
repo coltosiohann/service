@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CopieConformaBadge } from '@/features/vehicles/components/copie-conforma-badge';
 import { InsuranceBadge } from '@/features/vehicles/components/insurance-badge';
+import { ItpBadge } from '@/features/vehicles/components/itp-badge';
 import { StatusPill } from '@/features/vehicles/components/status-pill';
 import { TachographBadge } from '@/features/vehicles/components/tachograph-badge';
 import { VehicleDetailActions } from '@/features/vehicles/components/vehicle-detail-actions';
@@ -83,7 +84,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Asigurare</CardTitle>
@@ -105,6 +106,26 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             <InsuranceBadge state={vehicle.insuranceStatus} />
           </CardContent>
         </Card>
+
+        {vehicle.type !== 'EQUIPMENT' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>ITP</CardTitle>
+              <CardDescription>Inspectia tehnica periodica.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>Valabil pana la</span>
+                <span className="font-medium">{formatDate(vehicle.itpExpiryDate)}</span>
+              </div>
+              {vehicle.itpStatus ? (
+                <ItpBadge state={vehicle.itpStatus} />
+              ) : (
+                <Badge variant="outline">Nespecificat</Badge>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

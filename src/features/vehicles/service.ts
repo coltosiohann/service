@@ -166,6 +166,7 @@ export async function createVehicle(payload: unknown) {
         insurancePolicyNumber: insuranceNumberValue,
         insuranceStartDate: toISODate(vehicle.insuranceStartDate),
         insuranceEndDate: toISODate(vehicle.insuranceEndDate),
+        itpExpiryDate: vehicle.type !== 'EQUIPMENT' ? toISODate(vehicle.itpExpiryDate) : null,
         copieConformaStartDate: copieConformaStart,
         copieConformaExpiryDate: copieConformaExpiry,
         hasHeavyTonnageAuthorization:
@@ -241,6 +242,12 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
       updateData.insuranceEndDate !== undefined
         ? toISODate(updateData.insuranceEndDate)
         : existing.insuranceEndDate ?? null;
+    const itpExpiryDate =
+      merged.type !== 'EQUIPMENT'
+        ? updateData.itpExpiryDate !== undefined
+          ? toISODate(updateData.itpExpiryDate)
+          : existing.itpExpiryDate ?? null
+        : null;
     const rawCopieConformaStart =
       merged.type === 'TRUCK'
         ? (updateData.copieConformaStartDate !== undefined
@@ -292,6 +299,7 @@ export async function updateVehicle(vehicleId: string, payload: unknown) {
         insurancePolicyNumber: sanitizedInsuranceNumber,
         insuranceStartDate,
         insuranceEndDate,
+        itpExpiryDate,
         copieConformaStartDate,
         copieConformaExpiryDate,
         hasHeavyTonnageAuthorization:

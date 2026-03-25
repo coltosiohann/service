@@ -3,7 +3,7 @@ import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { documents, vehicles } from '@/db/schema';
 
-import { computeCopieConformaStatus, computeInsuranceStatus, computeTachographStatus } from './status';
+import { computeCopieConformaStatus, computeInsuranceStatus, computeItpStatus, computeTachographStatus } from './status';
 
 import type { InsuranceStatus, TachographStatus } from './status';
 
@@ -21,6 +21,7 @@ export type VehicleListFilters = {
   type?: 'CAR' | 'TRUCK' | 'EQUIPMENT' | 'TRAILER';
   status?: 'OK' | 'DUE_SOON' | 'OVERDUE';
   insurance?: InsuranceStatus;
+  itp?: InsuranceStatus;
   search?: string;
   truck?: {
     tonajMare?: 'true' | 'false';
@@ -70,6 +71,7 @@ export async function listVehicles(filters: VehicleListFilters) {
       insurancePolicyNumber: vehicles.insurancePolicyNumber,
       insuranceStartDate: vehicles.insuranceStartDate,
       insuranceEndDate: vehicles.insuranceEndDate,
+      itpExpiryDate: vehicles.itpExpiryDate,
       copieConformaStartDate: vehicles.copieConformaStartDate,
       copieConformaExpiryDate: vehicles.copieConformaExpiryDate,
       hasHeavyTonnageAuthorization: vehicles.hasHeavyTonnageAuthorization,
@@ -85,6 +87,7 @@ export async function listVehicles(filters: VehicleListFilters) {
   const enriched = rows
     .map((row) => {
       const insuranceStatus = computeInsuranceStatus(row.insuranceEndDate ?? null);
+      const itpStatus = row.type !== 'EQUIPMENT' ? computeItpStatus(row.itpExpiryDate ?? null) : null;
       const tachographStatus =
         row.type === 'TRUCK' ? computeTachographStatus(row.tachographCheckDate ?? null) : null;
       const copieConformaStatus =
@@ -97,6 +100,7 @@ export async function listVehicles(filters: VehicleListFilters) {
         currentOdometerKm: toNumber(row.currentOdometerKm) ?? 0,
         nextRevisionAtKm: toNumber(row.nextRevisionAtKm),
         insuranceStatus,
+        itpStatus,
         tachographStatus,
         copieConformaStatus,
         hasTonaj,
@@ -105,6 +109,12 @@ export async function listVehicles(filters: VehicleListFilters) {
     .filter((row) => {
       if (filters.insurance && row.insuranceStatus !== filters.insurance) {
         return false;
+      }
+
+      if (filters.itp) {
+        if (row.type === 'EQUIPMENT' || row.itpStatus !== filters.itp) {
+          return false;
+        }
       }
 
       if (truck?.tonajMare && row.type === 'TRUCK') {

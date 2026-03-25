@@ -67,6 +67,7 @@ export const vehiclePayloadSchema = z
     insurancePolicyNumber: optionalTrimmedString(120, 'Numarul politei poate avea cel mult 120 de caractere.'),
     insuranceStartDate: optionalDate(),
     insuranceEndDate: optionalDate(),
+    itpExpiryDate: optionalDate(),
     hasHeavyTonnageAuthorization: z.coerce.boolean().optional().nullable(),
     tachographCheckDate: optionalDate(),
     copieConformaStartDate: optionalDate(),
@@ -102,6 +103,14 @@ export const vehiclePayloadSchema = z
         });
       }
     }
+
+    if (data.type === 'EQUIPMENT' && data.itpExpiryDate != null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'ITP este disponibil doar pentru masini, camioane si remorci.',
+        path: ['itpExpiryDate'],
+      });
+    }
   });
 export const vehicleUpdateSchema = vehiclePayloadSchema.partial({
   orgId: true,
@@ -113,6 +122,7 @@ export const vehicleQuerySchema = z.object({
   type: vehicleTypeEnum.optional(),
   status: vehicleStatusEnum.optional(),
   insurance: z.enum(['active', 'expiring', 'expired']).optional(),
+  itp: z.enum(['active', 'expiring', 'expired']).optional(),
   search: z.string().optional(),
   truck: z
     .object({

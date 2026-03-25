@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       type: url.searchParams.get('type') ?? undefined,
       status: url.searchParams.get('status') ?? undefined,
       insurance: url.searchParams.get('insurance') ?? undefined,
+      itp: url.searchParams.get('itp') ?? undefined,
       search: url.searchParams.get('search') ?? undefined,
       truck:
         truckTonaj || truckTahograf

@@ -100,13 +100,14 @@ export const vehicles = pgTable(
     lastRevisionDate: date('last_revision_date'),
     nextRevisionAtKm: numeric('next_revision_at_km', { precision: 12, scale: 2 }),
     nextRevisionDate: date('next_revision_date'),
-      insuranceProvider: text('insurance_provider'),
-      insurancePolicyNumber: text('insurance_policy_number'),
-      insuranceStartDate: date('insurance_start_date'),
-      insuranceEndDate: date('insurance_end_date'),
-      copieConformaStartDate: date('copie_conforma_start_date'),
-      copieConformaExpiryDate: date('copie_conforma_expiry_date'),
-      hasHeavyTonnageAuthorization: boolean('has_heavy_tonnage_authorization'),
+    insuranceProvider: text('insurance_provider'),
+    insurancePolicyNumber: text('insurance_policy_number'),
+    insuranceStartDate: date('insurance_start_date'),
+    insuranceEndDate: date('insurance_end_date'),
+    itpExpiryDate: date('itp_expiry_date'),
+    copieConformaStartDate: date('copie_conforma_start_date'),
+    copieConformaExpiryDate: date('copie_conforma_expiry_date'),
+    hasHeavyTonnageAuthorization: boolean('has_heavy_tonnage_authorization'),
     tachographCheckDate: date('tachograph_check_date'),
     status: vehicleStatusEnum('status').notNull().default('OK'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -128,6 +129,7 @@ export const vehicles = pgTable(
       .on(table.type, table.tachographCheckDate)
       .where(sql`${table.type} = 'TRUCK'`),
     insuranceEndDateIdx: index('vehicles_insurance_end_date_idx').on(table.insuranceEndDate),
+    itpExpiryDateIdx: index('vehicles_itp_expiry_date_idx').on(table.itpExpiryDate),
     truckAuthorizationCheck: check(
       'vehicles_truck_authorization_check',
       sql`${table.type} = 'TRUCK' OR ${table.hasHeavyTonnageAuthorization} IS NULL`,
@@ -139,6 +141,10 @@ export const vehicles = pgTable(
     truckCopieConformaCheck: check(
       'vehicles_truck_copie_conforma_check',
       sql`${table.type} = 'TRUCK' OR (${table.copieConformaStartDate} IS NULL AND ${table.copieConformaExpiryDate} IS NULL)`,
+    ),
+    equipmentItpCheck: check(
+      'vehicles_equipment_itp_check',
+      sql`${table.type} <> 'EQUIPMENT' OR ${table.itpExpiryDate} IS NULL`,
     ),
   }),
 );

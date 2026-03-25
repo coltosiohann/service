@@ -3,8 +3,39 @@ import { differenceInCalendarDays, isAfter, isBefore, isValid, startOfDay } from
 import type { VehicleStatus } from '@/db/schema';
 
 export type InsuranceStatus = 'active' | 'expiring' | 'expired';
+export type ItpStatus = 'active' | 'expiring' | 'expired';
 export type TachographStatus = 'ok' | 'soon' | 'overdue' | 'missing';
 export type CopieConformaStatus = 'ok' | 'soon' | 'overdue' | 'missing';
+
+function computeExpiryStatus(
+  endDate: Date | string | null,
+  expiringWithinDays: number,
+): InsuranceStatus {
+  if (!endDate) {
+    return 'expired';
+  }
+
+  const dateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
+
+  if (!isValid(dateObj)) {
+    return 'expired';
+  }
+
+  const endDateStart = startOfDay(dateObj);
+  const todayStart = startOfDay(new Date());
+
+  if (isBefore(endDateStart, todayStart)) {
+    return 'expired';
+  }
+
+  const days = differenceInCalendarDays(endDateStart, todayStart);
+
+  if (days <= expiringWithinDays) {
+    return 'expiring';
+  }
+
+  return 'active';
+}
 
 export function computeVehicleStatus(params: {
   nextRevisionDate: Date | string | null;
@@ -45,32 +76,11 @@ export function computeVehicleStatus(params: {
 }
 
 export function computeInsuranceStatus(endDate: Date | string | null): InsuranceStatus {
-  if (!endDate) {
-    return 'expired';
-  }
+  return computeExpiryStatus(endDate, 30);
+}
 
-  // Convert string to Date object if needed
-  const dateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
-
-  if (!isValid(dateObj)) {
-    return 'expired';
-  }
-
-  // Compare only dates, not times
-  const endDateStart = startOfDay(dateObj);
-  const todayStart = startOfDay(new Date());
-
-  if (isBefore(endDateStart, todayStart)) {
-    return 'expired';
-  }
-
-  const days = differenceInCalendarDays(endDateStart, todayStart);
-
-  if (days <= 30) {
-    return 'expiring';
-  }
-
-  return 'active';
+export function computeItpStatus(endDate: Date | string | null): ItpStatus {
+  return computeExpiryStatus(endDate, 7);
 }
 
 export function computeTachographStatus(date: Date | string | null): TachographStatus {
@@ -149,4 +159,3 @@ export function shouldTriggerTachographReminder(date: Date | string | null, lead
 
   return !isAfter(today, dateObj) && !isBefore(today, triggerDate);
 }
-

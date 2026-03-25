@@ -69,6 +69,7 @@ const vehicleSchema = z.object({
   insurancePolicyNumber: optionalTextField(),
   insuranceStartDate: z.string().optional(),
   insuranceEndDate: z.string().optional(),
+  itpExpiryDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
   tachographCheckDate: z.string().optional(),
   copieConformaStartDate: z.string().optional(),
@@ -126,6 +127,10 @@ export function VehicleForm() {
       insurancePolicyNumber: sanitizeText(values.insurancePolicyNumber),
       insuranceStartDate: values.insuranceStartDate ? new Date(values.insuranceStartDate) : null,
       insuranceEndDate: values.insuranceEndDate ? new Date(values.insuranceEndDate) : null,
+      itpExpiryDate:
+        values.type !== 'EQUIPMENT' && values.itpExpiryDate
+          ? new Date(values.itpExpiryDate)
+          : null,
       hasHeavyTonnageAuthorization:
         values.type === 'TRUCK'
           ? Boolean(values.hasHeavyTonnageAuthorization === 'on' || values.hasHeavyTonnageAuthorization === true)
@@ -165,11 +170,17 @@ export function VehicleForm() {
   const selectedTire = tireStock.find((tire) => tire.id === selectedTireStockId);
 
   useEffect(() => {
+    if (typeValue === 'EQUIPMENT') {
+      form.setValue('itpExpiryDate', '');
+      form.clearErrors(['itpExpiryDate']);
+    }
+
     if (typeValue !== 'TRUCK') {
       form.setValue('hasHeavyTonnageAuthorization', false);
       form.setValue('tachographCheckDate', '');
       form.setValue('copieConformaStartDate', '');
       form.clearErrors([
+        'itpExpiryDate',
         'hasHeavyTonnageAuthorization',
         'tachographCheckDate',
         'copieConformaStartDate',
@@ -267,6 +278,13 @@ export function VehicleForm() {
               <Input id="insuranceEndDate" type="date" {...form.register('insuranceEndDate')} />
               <FieldError message={form.formState.errors.insuranceEndDate?.message} />
             </div>
+            {typeValue !== 'EQUIPMENT' && (
+              <div className="space-y-2">
+                <Label htmlFor="itpExpiryDate">ITP - valabil pana la</Label>
+                <Input id="itpExpiryDate" type="date" {...form.register('itpExpiryDate')} />
+                <FieldError message={form.formState.errors.itpExpiryDate?.message} />
+              </div>
+            )}
           </section>
 
           <section className="grid gap-4 md:grid-cols-2">

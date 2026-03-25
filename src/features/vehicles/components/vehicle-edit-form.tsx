@@ -69,6 +69,7 @@ const vehicleSchema = z.object({
   insurancePolicyNumber: optionalTextField(),
   insuranceStartDate: z.string().optional(),
   insuranceEndDate: z.string().optional(),
+  itpExpiryDate: z.string().optional(),
   hasHeavyTonnageAuthorization: z.union([z.literal('on'), z.boolean()]).optional(),
   tachographCheckDate: z.string().optional(),
   copieConformaStartDate: z.string().optional(),
@@ -106,6 +107,7 @@ type VehicleUpdatePayload = {
   insurancePolicyNumber?: string;
   insuranceStartDate: Date | null;
   insuranceEndDate: Date | null;
+  itpExpiryDate: Date | null;
   hasHeavyTonnageAuthorization?: boolean;
   tachographCheckDate: Date | null;
   copieConformaStartDate: Date | null;
@@ -128,6 +130,7 @@ type VehicleEditFormProps = {
     insurancePolicyNumber: string | null;
     insuranceStartDate: Date | string | null;
     insuranceEndDate: Date | string | null;
+    itpExpiryDate: Date | string | null;
     hasHeavyTonnageAuthorization: boolean | null;
     tachographCheckDate: Date | string | null;
     copieConformaStartDate: Date | string | null;
@@ -161,6 +164,9 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       insuranceEndDate: vehicle.insuranceEndDate
         ? new Date(vehicle.insuranceEndDate).toISOString().split('T')[0]
         : '',
+      itpExpiryDate: vehicle.itpExpiryDate
+        ? new Date(vehicle.itpExpiryDate).toISOString().split('T')[0]
+        : '',
       hasHeavyTonnageAuthorization: vehicle.hasHeavyTonnageAuthorization || false,
       tachographCheckDate: vehicle.tachographCheckDate
         ? new Date(vehicle.tachographCheckDate).toISOString().split('T')[0]
@@ -192,13 +198,18 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
   );
 
   useEffect(() => {
+    if (typeValue === 'EQUIPMENT') {
+      form.setValue('itpExpiryDate', '');
+      form.clearErrors(['itpExpiryDate']);
+    }
+
     if (typeValue !== 'TRUCK') {
       form.setValue('tiresUsage', []);
       form.setValue('tireUsageReason', '');
       form.setValue('hasHeavyTonnageAuthorization', false);
       form.setValue('tachographCheckDate', '');
       form.setValue('copieConformaStartDate', '');
-      form.clearErrors(['tiresUsage', 'tireUsageReason', 'tachographCheckDate', 'copieConformaStartDate']);
+      form.clearErrors(['itpExpiryDate', 'tiresUsage', 'tireUsageReason', 'tachographCheckDate', 'copieConformaStartDate']);
     }
   }, [typeValue, form]);
 
@@ -218,6 +229,10 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
       insurancePolicyNumber: sanitizeText(values.insurancePolicyNumber),
       insuranceStartDate: values.insuranceStartDate ? new Date(values.insuranceStartDate) : null,
       insuranceEndDate: values.insuranceEndDate ? new Date(values.insuranceEndDate) : null,
+      itpExpiryDate:
+        values.type !== 'EQUIPMENT' && values.itpExpiryDate
+          ? new Date(values.itpExpiryDate)
+          : null,
       hasHeavyTonnageAuthorization:
         values.type === 'TRUCK'
           ? Boolean(values.hasHeavyTonnageAuthorization === 'on' || values.hasHeavyTonnageAuthorization === true)
@@ -349,6 +364,13 @@ export function VehicleEditForm({ vehicle }: VehicleEditFormProps) {
               <Input id="insuranceEndDate" type="date" {...form.register('insuranceEndDate')} />
               <FieldError message={form.formState.errors.insuranceEndDate?.message} />
             </div>
+            {typeValue !== 'EQUIPMENT' && (
+              <div className="space-y-2">
+                <Label htmlFor="itpExpiryDate">ITP - valabil pana la</Label>
+                <Input id="itpExpiryDate" type="date" {...form.register('itpExpiryDate')} />
+                <FieldError message={form.formState.errors.itpExpiryDate?.message} />
+              </div>
+            )}
           </section>
 
           {typeValue === 'TRUCK' && (
